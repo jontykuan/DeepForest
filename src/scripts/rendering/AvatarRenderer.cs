@@ -23,7 +23,7 @@ public class AvatarRenderer
 		string txtPath = $"{baseDir}/base.txt";
 		string tagsPath = $"{baseDir}/base.tags";
 
-		TextGrid baseGrid = null;
+		TextGrid baseGrid;
 		if (Godot.FileAccess.FileExists(txtPath))
 		{
 			baseGrid = AsciiTemplate.Load(txtPath, tagsPath, "avatar");

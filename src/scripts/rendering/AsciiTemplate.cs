@@ -5,7 +5,7 @@ namespace DeepForest.Rendering;
 
 public static class AsciiTemplate
 {
-	public static TextGrid Load(string txtPath, string tagsPath = null, string prefix = "scene")
+	public static TextGrid Load(string txtPath, string? tagsPath = null, string prefix = "scene")
 	{
 		if (!Godot.FileAccess.FileExists(txtPath))
 		{
@@ -32,7 +32,7 @@ public static class AsciiTemplate
 		TextGrid grid = new TextGrid(width, height);
 		grid.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
 
-		string[] tagsLines = null;
+		string[]? tagsLines = null;
 		if (!string.IsNullOrEmpty(tagsPath) && Godot.FileAccess.FileExists(tagsPath))
 		{
 			using var tagsFile = Godot.FileAccess.Open(tagsPath, Godot.FileAccess.ModeFlags.Read);
