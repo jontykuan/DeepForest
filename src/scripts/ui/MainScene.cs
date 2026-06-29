@@ -6,6 +6,7 @@ using DeepForest.Cards;
 using DeepForest.Character;
 using DeepForest.Scene;
 using DeepForest.Rendering;
+using DeepForest.Combat;
 
 namespace DeepForest.UI;
 
@@ -186,7 +187,19 @@ public partial class MainScene : Control
 		List<string> subs = new List<string>();
 		var activeScene = currentNode.SceneData;
 
-		if (GameState.Instance.IsIndoor && mapManager.CurrentIndoorScene != null)
+		if (GameState.Instance.IsInCombat && GameState.Instance.CurrentEnemy != null)
+		{
+			activeScene = new SceneData {
+				SceneName = activeScene.SceneName,
+				SceneDescription = activeScene.SceneDescription,
+				LeftTerrain = activeScene.LeftTerrain,
+				RightTerrain = activeScene.RightTerrain,
+				BottomGround = activeScene.BottomGround
+			};
+			foreach (var d in currentNode.SceneData.Decals) activeScene.Decals.Add(d);
+			activeScene.Decals.Add(GameState.Instance.CurrentEnemy.DecalName);
+		}
+		else if (GameState.Instance.IsIndoor && mapManager.CurrentIndoorScene != null)
 		{
 			activeScene = mapManager.CurrentIndoorScene;
 		}
@@ -256,11 +269,56 @@ public partial class MainScene : Control
 		var mapNode = MapManager.Instance.Nodes[MapManager.Instance.CurrentNodeId];
 		var sceneData = mapNode.SceneData;
 
+		string sceneName = sceneData.SceneName;
+		string sceneDescription = sceneData.SceneDescription;
+		List<SceneAction> activeActions = new List<SceneAction>();
+
+		if (GameState.Instance.IsInCombat && GameState.Instance.CurrentEnemy != null)
+		{
+			var enemy = GameState.Instance.CurrentEnemy;
+			string hpStr = enemy.HideHp ? "???/???" : $"{GameState.Instance.CurrentEnemyHp}/{enemy.MaxHp}";
+			sceneName = $"【戰鬥】{enemy.EnemyName}";
+			sceneDescription = $"一隻【{enemy.EnemyName}】阻擋了你！請從手牌打出屬性卡放入對決區，點擊下方對決進行比拼。";
+
+			if (GameState.Instance.CombatPlayedCards.Count > 0)
+			{
+				string playedCardsStr = "\n\n【已投入對決區的卡牌】：";
+				foreach (var c in GameState.Instance.CombatPlayedCards)
+				{
+					playedCardsStr += $"[{c.CardName}] ";
+				}
+				sceneDescription += playedCardsStr;
+			}
+			else
+			{
+				sceneDescription += "\n\n【對決區】：目前空無一物。請打出屬性卡進行比拼。";
+			}
+
+			activeActions.Add(new SceneAction { 
+				ActionName = $"揭露結果 ({enemy.EnemyName} {hpStr})", 
+				ThresholdType = ThresholdType.None, 
+				ThresholdValue = 0, 
+				EffectType = ActionEffectType.CombatClash 
+			});
+
+			int fleeDex = enemy.IsAggressive ? 5 : 2;
+			activeActions.Add(new SceneAction {
+				ActionName = "逃跑並前進",
+				ThresholdType = ThresholdType.Dex,
+				ThresholdValue = fleeDex,
+				EffectType = ActionEffectType.MoveForward
+			});
+		}
+		else
+		{
+			activeActions.AddRange(sceneData.Actions);
+		}
+
 		Label descLabel = new Label();
-		descLabel.Text = $"{sceneData.SceneName}\n{sceneData.SceneDescription}\n\n[ 可執行行動 ]：";
+		descLabel.Text = $"{sceneName}\n{sceneDescription}\n\n[ 可執行行動 ]：";
 		_actionList.AddChild(descLabel);
 
-		foreach (var action in sceneData.Actions)
+		foreach (var action in activeActions)
 		{
 			HBoxContainer row = new HBoxContainer();
 			Button actionButton = new Button();
@@ -365,6 +423,18 @@ public partial class MainScene : Control
 		if (handIndex < 0 || handIndex >= deck.Hand.Count) return;
 
 		Card card = deck.Hand[handIndex];
+
+		if (GameState.Instance.IsInCombat)
+		{
+			if (card.CardType == CardType.ActionStr || card.CardType == CardType.ActionDex || card.CardType == CardType.ActionWis)
+			{
+				CombatManager.Instance.AddCardToCombatZone(card);
+				UpdateHUD();
+				UpdateActionsList();
+				UpdateSceneAndAvatar();
+				return;
+			}
+		}
 
 		int thirstCost = card.ThirstCost;
 		if (card.CardType != CardType.Consumable && thirstCost > 0 && EnvironmentSystem.Instance != null)
@@ -475,6 +545,14 @@ public partial class MainScene : Control
 				GameState.Instance.AddLog($"找到了【{chosenItem}】，放入背包（棄牌堆）。");
 				break;
 			case ActionEffectType.MoveForward:
+				if (GameState.Instance.IsInCombat)
+				{
+					GameState.Instance.IsInCombat = false;
+					GameState.Instance.CurrentEnemy = null;
+					GameState.Instance.CombatPlayedCards.Clear();
+					GameState.Instance.AddLog("你成功逃離了戰鬥！");
+				}
+
 				GameState.Instance.CurrentDepth += 10;
 				
 				var mapManager = MapManager.Instance;
@@ -489,6 +567,47 @@ public partial class MainScene : Control
 				else
 				{
 					GameState.Instance.AddLog("你安全地走出了森林！");
+				}
+				break;
+			case ActionEffectType.CombatClash:
+				CombatManager.Instance.ResolveClash();
+				break;
+			case ActionEffectType.LootCorpse:
+				{
+					var lastEnemy = CombatManager.Instance.LastDefeatedEnemy;
+					if (lastEnemy != null && lastEnemy.LootTable.Count > 0)
+					{
+						foreach (var loot in lastEnemy.LootTable)
+						{
+							GameState.Instance.DeckInstance.DiscardPile.Add(loot);
+							GameState.Instance.AddLog($"你從屍體上搜刮到了：【{loot.CardName}】，放入背包。");
+						}
+					}
+					else
+					{
+						var lootItems = new string[] { "清水", "生魚", "木材" };
+						string randomItem = lootItems[new Random().Next(lootItems.Length)];
+						var defaultLoot = CreateConsumableCard(randomItem, 5, 0, 0, 0);
+						GameState.Instance.DeckInstance.DiscardPile.Add(defaultLoot);
+						GameState.Instance.AddLog($"你從屍體上搜刮到了：【{randomItem}】，放入背包。");
+					}
+					RemoveActionFromCurrentScene("搜屍");
+				}
+				break;
+			case ActionEffectType.DissectCorpse:
+				{
+					GameState.Instance.PlayerInstance.Corruption += 5;
+					var heart = new Card { 
+						CardName = "野獸心臟", 
+						CardType = CardType.Consumable, 
+						Weight = 1, 
+						Description = "生鮮搏動的野獸心臟。散發著難以言喻的誘惑。",
+						HpCost = -15,
+						SanityCost = 10
+					};
+					GameState.Instance.DeckInstance.DiscardPile.Add(heart);
+					GameState.Instance.AddLog("你冷酷地解剖了野獸屍體。暴戾與穢祟悄然滋長...你獲得了【野獸心臟】，放入背包。");
+					RemoveActionFromCurrentScene("解剖");
 				}
 				break;
 		}
@@ -527,5 +646,18 @@ public partial class MainScene : Control
 		endingLabel.Modulate = new Color(1.0f, 0.13f, 0.13f);
 		endingLabel.AddThemeFontOverride("font", GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font"));
 		_actionList.AddChild(endingLabel);
+	}
+
+	private void RemoveActionFromCurrentScene(string prefix)
+	{
+		var mapManager = MapManager.Instance;
+		var currentNode = mapManager.Nodes[mapManager.CurrentNodeId];
+		for (int i = currentNode.SceneData.Actions.Count - 1; i >= 0; i--)
+		{
+			if (currentNode.SceneData.Actions[i].ActionName.StartsWith(prefix))
+			{
+				currentNode.SceneData.Actions.RemoveAt(i);
+			}
+		}
 	}
 }

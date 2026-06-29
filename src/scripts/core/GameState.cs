@@ -17,13 +17,17 @@ public partial class GameState : Node
 
     public Player PlayerInstance { get; set; } = new();
     public Deck DeckInstance { get; set; } = new();
-    public CombatManager CombatManagerInstance { get; set; } = new();
     public EndingManager EndingManagerInstance { get; set; } = new();
     public StoryUnlock StoryUnlockInstance { get; set; } = new();
 
     public bool IsIndoor { get; set; } = false;
     public int IndoorDepth { get; set; } = 0;
     public int EntranceNodeId { get; set; } = 0;
+
+    public bool IsInCombat { get; set; } = false;
+    public EnemyData? CurrentEnemy { get; set; } = null;
+    public int CurrentEnemyHp { get; set; } = 0;
+    public List<Card> CombatPlayedCards { get; private set; } = new();
 
     private int _currentDay = 1;
     private int _currentDepth = 0;
@@ -56,7 +60,6 @@ public partial class GameState : Node
         Instance = this;
         AddChild(PlayerInstance);
         AddChild(DeckInstance);
-        AddChild(CombatManagerInstance);
         AddChild(EndingManagerInstance);
         AddChild(StoryUnlockInstance);
     }

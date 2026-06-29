@@ -13,7 +13,10 @@ public enum ActionEffectType
     MoveForward,
     ExploreIndoor,
     LeaveIndoor,
-    ReturnOutdoor
+    ReturnOutdoor,
+    LootCorpse,
+    DissectCorpse,
+    CombatClash
 }
 
 public enum ThresholdType
