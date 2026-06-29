@@ -234,7 +234,8 @@ public partial class MainScene : Control
 		string bannerText = $"第 {GameState.Instance.CurrentDay} 天 │ 森林深度: {GameState.Instance.CurrentDepth}";
 		if (env != null)
 		{
-			bannerText += $" │ 天氣: {env.GetWeatherString()} │ 溫度: {env.GetTempString()} │ 濕度: {env.GetHumidityString()}";
+			float tempF = env.CurrentTempCelsius * 9f / 5f + 32f;
+			bannerText += $" │ 天氣: {env.GetWeatherString()} │ 溫度: {env.CurrentTempCelsius:F1}攝氏 / {tempF:F1}華氏 │ 濕度: {env.CurrentHumidityPercent:F0}%";
 		}
 
 		if (!string.IsNullOrEmpty(customLog))

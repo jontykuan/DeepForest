@@ -15,6 +15,9 @@ public partial class EnvironmentSystem : Node
     public TempType Temperature { get; set; } = TempType.Cool;
     public HumidityType Humidity { get; set; } = HumidityType.Moderate;
 
+    public float CurrentTempCelsius { get; private set; } = 15f;
+    public float CurrentHumidityPercent { get; private set; } = 60f;
+
     public override void _EnterTree()
     {
         Instance = this;
@@ -37,13 +40,20 @@ public partial class EnvironmentSystem : Node
         int w = (int)Math.Round(NextGaussian(1.0, 1.0));
         Weather = (WeatherType)Math.Clamp(w, 0, 4);
 
-        // 溫度: 0=寒冷, 1=涼爽, 2=溫暖, 3=炎熱, 4=酷熱。中心設在涼爽~溫暖(1.5)，標準差0.8
-        int t = (int)Math.Round(NextGaussian(1.5, 0.8));
-        Temperature = (TempType)Math.Clamp(t, 0, 4);
+        // 溫度: 溫帶森林氣候的常態分佈 (攝氏)，平均 15度，標準差 8度
+        CurrentTempCelsius = (float)NextGaussian(15.0, 8.0);
+        if (CurrentTempCelsius <= 0) Temperature = TempType.Freezing;
+        else if (CurrentTempCelsius <= 15) Temperature = TempType.Cool;
+        else if (CurrentTempCelsius <= 25) Temperature = TempType.Warm;
+        else if (CurrentTempCelsius <= 35) Temperature = TempType.Hot;
+        else Temperature = TempType.Scorching;
 
-        // 濕度: 0=乾燥, 1=適中, 2=潮濕, 3=極濕。中心設在適中~潮濕(1.5)，標準差0.8
-        int h = (int)Math.Round(NextGaussian(1.5, 0.8));
-        Humidity = (HumidityType)Math.Clamp(h, 0, 3);
+        // 濕度: 平均 65%，標準差 15%
+        CurrentHumidityPercent = Math.Clamp((float)NextGaussian(65.0, 15.0), 0f, 100f);
+        if (CurrentHumidityPercent < 30) Humidity = HumidityType.Dry;
+        else if (CurrentHumidityPercent < 60) Humidity = HumidityType.Moderate;
+        else if (CurrentHumidityPercent < 85) Humidity = HumidityType.Humid;
+        else Humidity = HumidityType.ExtremelyHumid;
     }
 
     public string GetWeatherString() => Weather switch
