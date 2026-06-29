@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=7 format=3]
+
+[ext_resource type="Resource" path="res://src/resources/cards/card_strength.tres" id="1_str"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_dexterity.tres" id="2_dex"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_wisdom.tres" id="3_wis"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_rations.tres" id="4_rations"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_water_flask.tres" id="5_water"]
+[ext_resource type="Script" path="res://src/scripts/character/CharacterData.cs" id="6_char_script"]
+
+[resource]
+script = ExtResource("6_char_script")
+CharacterName = "預設成年男性"
+MaxHp = 100
+MaxSanity = 100
+MaxHunger = 50
+MaxThirst = 50
+Draw = 5
+HandLimit = 7
+DeckCapacity = 30
+StartingDeck = Array[Resource]([ExtResource("1_str"), ExtResource("1_str"), ExtResource("1_str"), ExtResource("1_str"), ExtResource("2_dex"), ExtResource("2_dex"), ExtResource("2_dex"), ExtResource("2_dex"), ExtResource("3_wis"), ExtResource("3_wis"), ExtResource("3_wis"), ExtResource("3_wis"), ExtResource("4_rations"), ExtResource("4_rations"), ExtResource("5_water"), ExtResource("5_water")])

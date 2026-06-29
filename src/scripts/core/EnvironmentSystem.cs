@@ -23,6 +23,11 @@ public partial class EnvironmentSystem : Node
         Instance = this;
     }
 
+    public override void _Ready()
+    {
+        GenerateRandomEnvironment();
+    }
+
     private readonly Random _random = new Random();
 
     private double NextGaussian(double mean, double stdDev)

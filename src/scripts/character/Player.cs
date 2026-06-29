@@ -113,8 +113,29 @@ public partial class Player : Node
     public int HandLimit { get; set; } = 7;
     public int DeckCapacity { get; set; } = 30;
 
+    [Export] public CharacterData? CharacterData { get; set; }
+
     public override void _Ready()
     {
-        // Initial setup
+        if (CharacterData != null)
+        {
+            InitializeFromData(CharacterData);
+        }
+    }
+
+    public void InitializeFromData(CharacterData data)
+    {
+        CharacterData = data;
+        _maxHp = data.MaxHp;
+        _currentHp = data.MaxHp;
+        _maxSanity = data.MaxSanity;
+        _currentSanity = data.MaxSanity;
+        _maxHunger = data.MaxHunger;
+        _currentHunger = data.MaxHunger;
+        _maxThirst = data.MaxThirst;
+        _currentThirst = data.MaxThirst;
+        Draw = data.Draw;
+        HandLimit = data.HandLimit;
+        DeckCapacity = data.DeckCapacity;
     }
 }

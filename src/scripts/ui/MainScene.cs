@@ -37,7 +37,7 @@ public partial class MainScene : Control
 
 		_sceneRenderer = new SceneRenderer(68, 24);
 		_avatarRenderer = new AvatarRenderer(20, 16);
-		_mapRenderer = new MapRenderer(30, 8);
+		_mapRenderer = new MapRenderer(30, 12);
 
 		GameState.Instance.LogAdded += OnLogAdded;
 		GameState.Instance.PlayerInstance.StatChanged += OnPlayerStatChanged;
@@ -47,16 +47,11 @@ public partial class MainScene : Control
 		GameState.Instance.DepthChanged += (depth) => UpdateSystemBanner();
 		GameState.Instance.EndingManagerInstance.EndingTriggered += OnEndingTriggered;
 
-		var startingCards = new List<Card>();
-		for (int i = 0; i < 4; i++) startingCards.Add(CreateActionCard("力量行動", CardType.ActionStr, 1, 1, 0, 0, 1, 0));
-		for (int i = 0; i < 4; i++) startingCards.Add(CreateActionCard("靈巧行動", CardType.ActionDex, 1, 0, 1, 0, 1, 0));
-		for (int i = 0; i < 4; i++) startingCards.Add(CreateActionCard("智慧行動", CardType.ActionWis, 1, 0, 0, 1, 1, 0));
-		
-		startingCards.Add(CreateConsumableCard("乾糧", 8, -3, 0, 0));
-		startingCards.Add(CreateConsumableCard("乾糧", 8, -3, 0, 0));
-		startingCards.Add(CreateConsumableCard("水壺", 0, 10, 0, 0));
-		startingCards.Add(CreateConsumableCard("水壺", 0, 10, 0, 0));
+		var characterRes = GD.Load<CharacterData>("res://src/resources/characters/character_default_male.tres");
+		var player = GameState.Instance.PlayerInstance;
+		player.InitializeFromData(characterRes);
 
+		var startingCards = new List<Card>(characterRes.StartingDeck);
 		GameState.Instance.DeckInstance.Initialize(startingCards);
 
 		UpdateHUD();
@@ -194,15 +189,7 @@ public partial class MainScene : Control
 			subs.Add("tent");
 		}
 
-		string sceneType = "riverside";
-		if (currentNode.Name.Contains("起點") || currentNode.Name.Contains("帳篷")) sceneType = "riverside";
-		else if (currentNode.Name.Contains("河畔")) sceneType = "riverside";
-		else if (currentNode.Name.Contains("獵屋")) sceneType = "abandoned_cabin";
-		else if (currentNode.Name.Contains("深處")) sceneType = "forest_path";
-		else if (currentNode.Name.Contains("祭壇")) sceneType = "ruin";
-		else if (currentNode.Name.Contains("出口")) sceneType = "crossroads";
-
-		var sceneGrid = _sceneRenderer.RenderScene(sceneType, weather, subs);
+		var sceneGrid = _sceneRenderer.RenderScene(currentNode.SceneData, weather, subs);
 
 		string avatarName = "default_male";
 		string expression = "normal";
@@ -235,7 +222,7 @@ public partial class MainScene : Control
 		if (env != null)
 		{
 			float tempF = env.CurrentTempCelsius * 9f / 5f + 32f;
-			bannerText += $" │ 天氣: {env.GetWeatherString()} │ 溫度: {env.CurrentTempCelsius:F1}攝氏 / {tempF:F1}華氏 │ 濕度: {env.CurrentHumidityPercent:F0}%";
+			bannerText += $"|天氣：{env.GetWeatherString()}|溫度：{env.CurrentTempCelsius:F1}°C/{tempF:F1}°F|濕度：{env.CurrentHumidityPercent:F0}%";
 		}
 
 		if (!string.IsNullOrEmpty(customLog))
@@ -437,6 +424,12 @@ public partial class MainScene : Control
 				var water = CreateConsumableCard("清水", 0, 8, 0, 0);
 				GameState.Instance.DeckInstance.DiscardPile.Add(water);
 				GameState.Instance.AddLog("用水瓶裝滿了清水，加入棄牌堆。");
+				break;
+			case ActionEffectType.PryCellar:
+				GameState.Instance.PlayerInstance.Corruption += 5;
+				var specialLoot = new Card { CardName = "帶血的日記", CardType = CardType.KeyItem, Weight = 1, Description = "地窖裡發現的帶血日記。" };
+				GameState.Instance.DeckInstance.DiscardPile.Add(specialLoot);
+				GameState.Instance.AddLog("你撬開了地窖，陰冷的穢祟之氣撲面而來...你獲得了【帶血的日記】，放入背包。");
 				break;
 			case ActionEffectType.Search:
 				var items = new string[] { "地圖殘片", "生鏽的鑰匙", "帶血的日記" };

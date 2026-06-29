@@ -57,7 +57,8 @@ public static class AsciiTemplate
 				Color fg = new Color(0.22f, 1.0f, 0.08f);
 				Color bg = new Color(0, 0, 0);
 
-				CharCell cell = new CharCell(c, fg, bg, tagStr, false);
+				bool isTransparent = (c == ' ' || c == '\0');
+				CharCell cell = new CharCell(c, fg, bg, tagStr, isTransparent);
 				grid.SetCell(gridX, y, cell);
 
 				gridX += TextGrid.IsFullWidth(c) ? 2 : 1;
