@@ -59,14 +59,14 @@ public class SceneRenderer
 
 		// 1. 載入透視基底線條
 		TextGrid baseGrid = AsciiTemplate.Load($"{baseDir}/perspective_template.txt", null, "scene");
-		_buffer.Blit(baseGrid, 0, 0);
+		_buffer.Blit(baseGrid, 0, 0, false);
 
 		// 2. 載入地面
 		string groundPath = $"{baseDir}/ground_{sd.BottomGround}.txt";
 		if (Godot.FileAccess.FileExists(groundPath))
 		{
 			TextGrid groundGrid = AsciiTemplate.Load(groundPath, null, "scene");
-			_buffer.Blit(groundGrid, 0, 0);
+			_buffer.Blit(groundGrid, 0, 0, false);
 		}
 
 		// 3. 載入左側地形
@@ -74,7 +74,7 @@ public class SceneRenderer
 		if (Godot.FileAccess.FileExists(leftPath))
 		{
 			TextGrid leftGrid = AsciiTemplate.Load(leftPath, null, "scene");
-			_buffer.Blit(leftGrid, 0, 0);
+			_buffer.Blit(leftGrid, 0, 0, false);
 		}
 
 		// 4. 載入右側地形
@@ -82,17 +82,17 @@ public class SceneRenderer
 		if (Godot.FileAccess.FileExists(rightPath))
 		{
 			TextGrid rightGrid = AsciiTemplate.Load(rightPath, null, "scene");
-			_buffer.Blit(rightGrid, 0, 0);
+			_buffer.Blit(rightGrid, 0, 0, false);
 		}
 
-		// 5. 載入貼圖 (Decals)
+		// 5. 載入貼圖 (Decals) - 強制覆蓋
 		foreach (var decal in sd.Decals)
 		{
 			string decalPath = $"{baseDir}/decal_{decal}.txt";
 			if (Godot.FileAccess.FileExists(decalPath))
 			{
 				TextGrid decalGrid = AsciiTemplate.Load(decalPath, null, "scene");
-				_buffer.Blit(decalGrid, 0, 0);
+				_buffer.Blit(decalGrid, 0, 0, true);
 			}
 		}
 	}
@@ -132,9 +132,23 @@ public class SceneRenderer
 				}
 				else if (quadrant == "ground")
 				{
-					// 下：地面
-					c = GetGroundChar(sd.BottomGround, x, y);
-					tag = "scene.ground";
+					if (x < 30)
+					{
+						string leftGround = GetGroundThemeForTerrain(sd.LeftTerrain);
+						c = GetGroundChar(leftGround, x, y);
+						tag = "scene.left_ground";
+					}
+					else if (x > 38)
+					{
+						string rightGround = GetGroundThemeForTerrain(sd.RightTerrain);
+						c = GetGroundChar(rightGround, x, y);
+						tag = "scene.right_ground";
+					}
+					else
+					{
+						c = GetGroundChar(sd.BottomGround, x, y);
+						tag = "scene.ground";
+					}
 				}
 
 				_buffer.SetCell(x, y, new CharCell(c, fgColor, bgColor, tag, c == ' '));
@@ -241,6 +255,24 @@ public class SceneRenderer
 		return ' ';
 	}
 
+	private string GetGroundThemeForTerrain(string terrain)
+	{
+		switch (terrain)
+		{
+			case "woodland":
+				return "grass";
+			case "cabin":
+				return "planks";
+			case "ruins":
+			case "stone_wall":
+				return "stone_tiles";
+			case "swamp":
+				return "dirt";
+			default:
+				return "dirt";
+		}
+	}
+
 	private char GetGroundChar(string ground, int x, int y)
 	{
 		var rand = new System.Random(y * _width + x);
@@ -250,8 +282,10 @@ public class SceneRenderer
 				if (rand.NextDouble() < 0.12) return rand.Next(2) == 0 ? '"' : '·';
 				break;
 			case "planks":
-				// 地板木紋
 				if (x % 6 == 0) return '│';
+				break;
+			case "stone_tiles":
+				if (x % 8 == 0 || y % 3 == 0) return '┼';
 				break;
 			case "dirt":
 			default:

@@ -58,7 +58,7 @@ public class TextGrid
 		}
 	}
 
-	public void Blit(TextGrid src, int destX, int destY)
+	public void Blit(TextGrid src, int destX, int destY, bool forceOverwrite = false)
 	{
 		for (int srcY = 0; srcY < src.Height; srcY++)
 		{
@@ -73,6 +73,15 @@ public class TextGrid
 				CharCell srcCell = src.GetCell(srcX, srcY);
 				if (srcCell.IsTransparent) continue;
 				if (srcCell.Tag == "_") continue;
+
+				if (!forceOverwrite)
+				{
+					CharCell destCell = GetCell(targetX, targetY);
+					if (destCell.Character != ' ' && destCell.Character != '\0' && destCell.Tag != "_")
+					{
+						continue;
+					}
+				}
 
 				SetCell(targetX, targetY, srcCell);
 			}
