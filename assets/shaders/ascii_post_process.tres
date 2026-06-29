@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/ascii_post_process.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/textures/ascii_ramp.png" id="2_ramp"]
+
+[resource]
+shader = ExtResource("1_shader")
+shader_parameter/char_size = Vector2(8, 16)
+shader_parameter/tint_color = Color(0.223529, 1, 0.0784314, 1)
+shader_parameter/bg_color = Color(0, 0, 0, 1)
+shader_parameter/glitch_intensity = 0.0
+shader_parameter/blindness_mask = Vector2(1, 1)
+shader_parameter/colored_mode = false
+shader_parameter/ascii_tex = ExtResource("2_ramp")

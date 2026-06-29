@@ -1,0 +1,16 @@
+res://src/scenes/MainScene.tscn
+res://src/scripts/ui/MainScene.cs
+res://src/scripts/core/EnvironmentSystem.cs
+res://src/scripts/core/GameState.cs
+res://src/scripts/scene/MapManager.cs
+res://src/scripts/narrative/StoryUnlock.cs
+res://src/scripts/combat/Enemy.cs
+res://src/scripts/cards/Deck.cs
+res://src/scripts/narrative/EndingManager.cs
+res://src/scripts/cards/Card.cs
+res://src/scripts/scene/SceneData.cs
+res://src/scripts/character/Player.cs
+res://src/scripts/scene/SceneAction.cs
+res://src/scripts/core/TurnManager.cs
+res://src/scripts/scene/Forest3D.cs
+res://src/scripts/combat/CombatManager.cs

@@ -1,0 +1,33 @@
+using Godot;
+
+namespace DeepForest.Scene;
+
+public enum ActionEffectType
+{
+    None,
+    Camp,
+    Fish,
+    CollectWater,
+    Search,
+    PryCellar,
+    MoveForward
+}
+
+public enum ThresholdType
+{
+    None,
+    Str,
+    Dex,
+    Wis
+}
+
+[GlobalClass]
+public partial class SceneAction : Resource
+{
+    [Export] public string ActionName { get; set; } = "Action";
+    [Export] public ThresholdType ThresholdType { get; set; } = ThresholdType.None;
+    [Export] public int ThresholdValue { get; set; } = 0;
+    [Export] public string RequiredItem { get; set; } = "";
+    [Export] public ActionEffectType EffectType { get; set; } = ActionEffectType.None;
+    [Export] public int HpCostOnComplete { get; set; } = 2; 
+}

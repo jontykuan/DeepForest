@@ -1,0 +1,101 @@
+using Godot;
+using System;
+
+namespace DeepForest.Core;
+
+public enum WeatherType { Clear, Cloudy, Foggy, Rainy, Thunderstorm }
+public enum TempType { Freezing, Cool, Warm, Hot, Scorching }
+public enum HumidityType { Dry, Moderate, Humid, ExtremelyHumid }
+
+public partial class EnvironmentSystem : Node
+{
+    public static EnvironmentSystem Instance { get; private set; } = null!;
+
+    public WeatherType Weather { get; set; } = WeatherType.Clear;
+    public TempType Temperature { get; set; } = TempType.Cool;
+    public HumidityType Humidity { get; set; } = HumidityType.Moderate;
+
+    public override void _EnterTree()
+    {
+        Instance = this;
+    }
+
+    private readonly Random _random = new Random();
+
+    private double NextGaussian(double mean, double stdDev)
+    {
+        double u1 = 1.0 - _random.NextDouble(); 
+        double u2 = 1.0 - _random.NextDouble();
+        double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
+        return mean + stdDev * randStdNormal;
+    }
+
+    public void GenerateRandomEnvironment()
+    {
+        // 溫帶森林氣候的常態分佈
+        // 天氣: 0=晴朗, 1=陰天, 2=濃霧, 3=暴雨, 4=雷暴。中心設在陰天(1.0)，標準差1.0
+        int w = (int)Math.Round(NextGaussian(1.0, 1.0));
+        Weather = (WeatherType)Math.Clamp(w, 0, 4);
+
+        // 溫度: 0=寒冷, 1=涼爽, 2=溫暖, 3=炎熱, 4=酷熱。中心設在涼爽~溫暖(1.5)，標準差0.8
+        int t = (int)Math.Round(NextGaussian(1.5, 0.8));
+        Temperature = (TempType)Math.Clamp(t, 0, 4);
+
+        // 濕度: 0=乾燥, 1=適中, 2=潮濕, 3=極濕。中心設在適中~潮濕(1.5)，標準差0.8
+        int h = (int)Math.Round(NextGaussian(1.5, 0.8));
+        Humidity = (HumidityType)Math.Clamp(h, 0, 3);
+    }
+
+    public string GetWeatherString() => Weather switch
+    {
+        WeatherType.Clear => "晴朗",
+        WeatherType.Cloudy => "陰天",
+        WeatherType.Foggy => "濃霧",
+        WeatherType.Rainy => "暴雨",
+        WeatherType.Thunderstorm => "雷暴",
+        _ => "未知"
+    };
+
+    public string GetTempString() => Temperature switch
+    {
+        TempType.Freezing => "寒冷",
+        TempType.Cool => "涼爽",
+        TempType.Warm => "溫暖",
+        TempType.Hot => "炎熱",
+        TempType.Scorching => "酷熱",
+        _ => "未知"
+    };
+
+    public string GetHumidityString() => Humidity switch
+    {
+        HumidityType.Dry => "乾燥",
+        HumidityType.Moderate => "適中",
+        HumidityType.Humid => "潮濕",
+        HumidityType.ExtremelyHumid => "極濕",
+        _ => "未知"
+    };
+
+    public int GetDexThresholdModifier()
+    {
+        if (Weather == WeatherType.Foggy || Weather == WeatherType.Rainy || Weather == WeatherType.Thunderstorm)
+            return 2;
+        return 0;
+    }
+
+    public int GetThirstCostModifier()
+    {
+        if (Temperature == TempType.Hot || Temperature == TempType.Scorching)
+            return 1;
+        return 0;
+    }
+
+    public float GetRestRecoveryMultiplier()
+    {
+        float mult = 1.0f;
+        if (Humidity == HumidityType.Humid || Humidity == HumidityType.ExtremelyHumid)
+            mult -= 0.3f;
+        if (Weather == WeatherType.Rainy || Weather == WeatherType.Thunderstorm)
+            mult -= 0.2f;
+        return Math.Max(0.2f, mult);
+    }
+}

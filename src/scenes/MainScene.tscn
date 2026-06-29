@@ -1,0 +1,229 @@
+[gd_scene format=3 uid="uid://c6h1k2l3m4n6"]
+
+[ext_resource type="Script" uid="uid://dsj38x7tcisc6" path="res://src/scripts/ui/MainScene.cs" id="1_main_script"]
+[ext_resource type="FontFile" uid="uid://cpi35l8htb1i8" path="res://assets/fonts/msgothic.ttc" id="4_font"]
+
+[node name="MainScene" type="Control" unique_id=1618667164]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_script")
+
+[node name="SystemBanner" type="Panel" parent="." unique_id=472179779]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+grow_horizontal = 2
+
+[node name="BannerLabel" type="Label" parent="SystemBanner" unique_id=1395461909]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.223529, 1, 0.0784314, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = "第 1 天 │ 森林深度: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AvatarPanel" type="Panel" parent="." unique_id=681601833]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 60.0
+offset_right = 280.0
+offset_bottom = -410.0
+grow_vertical = 2
+
+[node name="AvatarLabel" type="RichTextLabel" parent="AvatarPanel" unique_id=1432422132]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/normal_font = ExtResource("4_font")
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="StatsPanel" type="Panel" parent="." unique_id=1036069769]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 310.0
+offset_right = 280.0
+offset_bottom = -160.0
+grow_vertical = 2
+
+[node name="StatsLabel" type="RichTextLabel" parent="StatsPanel" unique_id=33948428]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/normal_font = ExtResource("4_font")
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+text = "[ 狀態面板 ]
+體力: 100/100
+理智: 100/100
+飢餓: 50/50
+口渴: 50/50"
+scroll_active = false
+autowrap_mode = 0
+
+[node name="CenterViewport" type="Control" parent="." unique_id=2066586992]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 280.0
+offset_top = 60.0
+offset_right = -280.0
+offset_bottom = -160.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SceneLabel" type="RichTextLabel" parent="CenterViewport" unique_id=1854847820]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/normal_font = ExtResource("4_font")
+theme_override_font_sizes/normal_font_size = 14
+bbcode_enabled = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="ActionPanel" type="Panel" parent="CenterViewport" unique_id=26748336]
+self_modulate = Color(1, 1, 1, 0.8)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -220.0
+offset_right = 200.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ActionList" type="VBoxContainer" parent="CenterViewport/ActionPanel" unique_id=852468987]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = -15.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="MapPanel" type="Panel" parent="." unique_id=1163435261]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = 60.0
+offset_bottom = -410.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="MapLabel" type="RichTextLabel" parent="MapPanel" unique_id=484716197]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = -15.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/normal_font = ExtResource("4_font")
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+text = "[ 森林地圖 ]"
+scroll_active = false
+autowrap_mode = 0
+
+[node name="ItemsPanel" type="Panel" parent="." unique_id=877166147]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = 310.0
+offset_bottom = -160.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="ItemLabel" type="RichTextLabel" parent="ItemsPanel" unique_id=1023248443]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = -15.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/normal_font = ExtResource("4_font")
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+text = "[ 重要物品 & 裝備 ]"
+scroll_active = false
+autowrap_mode = 0
+
+[node name="HandUI" type="Panel" parent="." unique_id=1155710325]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -160.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HandList" type="HBoxContainer" parent="HandUI" unique_id=273617153]
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 20.0
+offset_top = -60.0
+offset_right = -20.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+alignment = 1

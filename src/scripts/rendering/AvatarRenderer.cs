@@ -1,0 +1,140 @@
+using Godot;
+
+namespace DeepForest.Rendering;
+
+public class AvatarRenderer
+{
+	private int _width;
+	private int _height;
+	private TextGrid _buffer;
+
+	public AvatarRenderer(int width = 20, int height = 16)
+	{
+		_width = width;
+		_height = height;
+		_buffer = new TextGrid(_width, _height);
+	}
+
+	public TextGrid RenderAvatar(string avatarName, string expression, int currentHp, int currentSanity)
+	{
+		_buffer.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
+
+		string baseDir = $"res://assets/ascii_art/avatars/{avatarName}";
+		string txtPath = $"{baseDir}/base.txt";
+		string tagsPath = $"{baseDir}/base.tags";
+
+		TextGrid baseGrid = null;
+		if (Godot.FileAccess.FileExists(txtPath))
+		{
+			baseGrid = AsciiTemplate.Load(txtPath, tagsPath, "avatar");
+		}
+		else
+		{
+			baseGrid = GenerateFallbackAvatar(avatarName);
+		}
+
+		_buffer.Blit(baseGrid, 0, 0);
+
+		ApplyAvatarEffects(expression, currentHp, currentSanity);
+
+		return _buffer;
+	}
+
+	private void ApplyAvatarEffects(string expression, int hp, int sanity)
+	{
+		bool isLowHp = hp < 30;
+		bool isLowSanity = sanity < 30;
+
+		for (int y = 0; y < _height; y++)
+		{
+			for (int x = 0; x < _width; x++)
+			{
+				CharCell cell = _buffer.GetCell(x, y);
+
+				if (cell.Tag == "avatar.face")
+				{
+					if (isLowHp || expression == "pain")
+					{
+						cell.ForegroundColor = new Color(1.0f, 0.13f, 0.13f);
+						if (cell.Character == '°') cell.Character = 'x';      
+						if (cell.Character == 'ω') cell.Character = 'Д';      
+					}
+					else if (isLowSanity || expression == "insane")
+					{
+						cell.ForegroundColor = new Color(0.4f, 0.0f, 0.4f); 
+						if (cell.Character == '°') cell.Character = '◉';      
+						if (cell.Character == 'ω') cell.Character = '∀';      
+					}
+				}
+
+				if (cell.Tag == "avatar.bg" && isLowSanity)
+				{
+					var rand = new System.Random(y * _width + x);
+					if (rand.NextDouble() < 0.1)
+					{
+						cell.Character = rand.Next(2) == 0 ? '▁' : '░';
+						cell.ForegroundColor = new Color(0.4f, 0.0f, 0.0f); 
+					}
+				}
+
+				_buffer.SetCell(x, y, cell);
+			}
+		}
+	}
+
+	private TextGrid GenerateFallbackAvatar(string name)
+	{
+		TextGrid grid = new TextGrid(_width, _height);
+		grid.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
+
+		for (int x = 0; x < _width; x++)
+		{
+			grid.SetCell(x, 0, new CharCell('═', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+			grid.SetCell(x, _height - 1, new CharCell('═', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+		}
+		for (int y = 0; y < _height; y++)
+		{
+			grid.SetCell(0, y, new CharCell('║', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+			grid.SetCell(_width - 1, y, new CharCell('║', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+		}
+
+		string[] art = {
+			"   /═══════\\   ",
+			"  │  ° _ °  │  ",
+			"  │    ω    │  ",
+			"   \\_______/   "
+		};
+
+		int startY = _height / 2 - art.Length / 2;
+		int startX = _width / 2 - 15 / 2;
+
+		for (int ay = 0; ay < art.Length; ay++)
+		{
+			for (int ax = 0; ax < art[ay].Length; ax++)
+			{
+				char c = art[ay][ax];
+				string tag = "avatar.body";
+				if (ay == 1 && ax >= 5 && ax <= 9) tag = "avatar.face";
+				if (ay == 2 && ax >= 5 && ax <= 9) tag = "avatar.face";
+				if (ay == 0) tag = "avatar.head";
+
+				grid.SetCell(startX + ax, startY + ay, new CharCell(c, new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0), tag));
+			}
+		}
+
+		for (int y = 1; y < _height - 1; y++)
+		{
+			for (int x = 1; x < _width - 1; x++)
+			{
+				CharCell cell = grid.GetCell(x, y);
+				if (cell.Tag == string.Empty || cell.Character == ' ')
+				{
+					cell.Tag = "avatar.bg";
+					grid.SetCell(x, y, cell);
+				}
+			}
+		}
+
+		return grid;
+	}
+}

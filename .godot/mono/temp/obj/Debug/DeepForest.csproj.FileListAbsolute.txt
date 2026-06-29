@@ -1,0 +1,17 @@
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\bin\Debug\DeepForest.deps.json
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\bin\Debug\DeepForest.runtimeconfig.json
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\bin\Debug\DeepForest.dll
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\bin\Debug\DeepForest.pdb
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\bin\Debug\GodotSharp.dll
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\bin\Debug\GodotSharpEditor.dll
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.csproj.AssemblyReference.cache
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.GeneratedMSBuildEditorConfig.editorconfig
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.AssemblyInfoInputs.cache
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.AssemblyInfo.cs
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.csproj.CoreCompileInputs.cache
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.csproj.Up2Date
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.dll
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\refint\DeepForest.dll
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.pdb
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\DeepForest.genruntimeconfig.cache
+D:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\.godot\mono\temp\obj\Debug\ref\DeepForest.dll
