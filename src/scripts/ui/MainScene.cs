@@ -296,6 +296,7 @@ public partial class MainScene : Control
 			ThresholdType.Str => $"[力量 {TurnManager.Instance.AccumulatedStr}/{action.ThresholdValue}]",
 			ThresholdType.Dex => $"[靈巧 {TurnManager.Instance.AccumulatedDex}/{action.ThresholdValue}]",
 			ThresholdType.Wis => $"[智慧 {TurnManager.Instance.AccumulatedWis}/{action.ThresholdValue}]",
+			ThresholdType.Any => $"[行動 {TurnManager.Instance.AccumulatedStr + TurnManager.Instance.AccumulatedDex + TurnManager.Instance.AccumulatedWis}/{action.ThresholdValue}]",
 			_ => ""
 		};
 
@@ -334,6 +335,7 @@ public partial class MainScene : Control
 			ThresholdType.Str => TurnManager.Instance.AccumulatedStr,
 			ThresholdType.Dex => TurnManager.Instance.AccumulatedDex,
 			ThresholdType.Wis => TurnManager.Instance.AccumulatedWis,
+			ThresholdType.Any => TurnManager.Instance.AccumulatedStr + TurnManager.Instance.AccumulatedDex + TurnManager.Instance.AccumulatedWis,
 			_ => 0
 		};
 

@@ -56,7 +56,7 @@ public partial class MapManager : Node
         // Layer 0: 起點營地
         var startScene = new SceneData
         {
-            SceneName = "野營帳篷",
+            SceneName = "紮營地",
             SceneDescription = "這裡是你的起點。營帳外籠罩著不祥的濃霧。",
             BottomGround = "dirt",
             LeftTerrain = "woodland",
@@ -65,7 +65,7 @@ public partial class MapManager : Node
         startScene.Decals.Add("tent_left");
         GenerateDynamicActions(startScene, isStart: true, isExit: false);
 
-        var startNode = new MapNode { Id = 0, Depth = 0, Name = "野營帳篷", SceneData = startScene, X = 12, Y = yCoords[0] };
+        var startNode = new MapNode { Id = 0, Depth = 0, Name = "紮營地", SceneData = startScene, X = 12, Y = yCoords[0] };
         Nodes[0] = startNode;
         layers.Add(new List<MapNode> { startNode });
 
@@ -223,7 +223,7 @@ public partial class MapManager : Node
 
         if (isStart)
         {
-            sd.Actions.Add(new SceneAction { ActionName = "前進", ThresholdType = ThresholdType.Dex, ThresholdValue = 1, EffectType = ActionEffectType.MoveForward });
+            sd.Actions.Add(new SceneAction { ActionName = "前進", ThresholdType = ThresholdType.Any, ThresholdValue = 1, EffectType = ActionEffectType.MoveForward });
             return;
         }
 

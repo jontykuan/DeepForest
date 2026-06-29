@@ -21,7 +21,8 @@ public enum ThresholdType
     None,
     Str,
     Dex,
-    Wis
+    Wis,
+    Any
 }
 
 [GlobalClass]
