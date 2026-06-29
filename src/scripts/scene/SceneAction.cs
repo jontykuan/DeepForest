@@ -10,7 +10,10 @@ public enum ActionEffectType
     CollectWater,
     Search,
     PryCellar,
-    MoveForward
+    MoveForward,
+    ExploreIndoor,
+    LeaveIndoor,
+    ReturnOutdoor
 }
 
 public enum ThresholdType

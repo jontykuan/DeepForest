@@ -18,14 +18,13 @@ public class SceneRenderer
 		_buffer = new TextGrid(_width, _height);
 	}
 
-	public TextGrid RenderScene(SceneData sceneData, string weather, List<string> activeSubs)
+	public TextGrid RenderScene(SceneData sceneData, string weather, List<string> activeSubs, bool isIndoor = false, int indoorDepth = 0, bool hasTorch = false)
 	{
 		_buffer.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
 
 		string baseDir = "res://assets/ascii_art/scenes";
 		string templatePath = $"{baseDir}/perspective_template.txt";
 
-		// 試圖從檔案載入，若無則走 C# Fallback 渲染器
 		if (Godot.FileAccess.FileExists(templatePath))
 		{
 			LoadSceneFromFiles(sceneData);
@@ -36,6 +35,20 @@ public class SceneRenderer
 		}
 
 		ApplyWeatherOverlay(weather);
+
+		if (isIndoor && !hasTorch)
+		{
+			float factor = Math.Max(0.05f, 1.0f - (indoorDepth * 0.25f));
+			for (int y = 0; y < _height; y++)
+			{
+				for (int x = 0; x < _width; x++)
+				{
+					CharCell cell = _buffer.GetCell(x, y);
+					cell.ForegroundColor = new Color(cell.ForegroundColor.R * factor, cell.ForegroundColor.G * factor, cell.ForegroundColor.B * factor);
+					_buffer.SetCell(x, y, cell);
+				}
+			}
+		}
 
 		return _buffer;
 	}

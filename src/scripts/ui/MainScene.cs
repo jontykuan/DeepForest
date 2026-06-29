@@ -184,12 +184,21 @@ public partial class MainScene : Control
 		string weather = env?.GetWeatherString() ?? "晴朗";
 
 		List<string> subs = new List<string>();
-		if (currentNode.SceneData.SceneName == "野營帳篷")
+		var activeScene = currentNode.SceneData;
+
+		if (GameState.Instance.IsIndoor && mapManager.CurrentIndoorScene != null)
+		{
+			activeScene = mapManager.CurrentIndoorScene;
+		}
+		else if (activeScene.SceneName == "野營帳篷")
 		{
 			subs.Add("tent");
 		}
 
-		var sceneGrid = _sceneRenderer.RenderScene(currentNode.SceneData, weather, subs);
+		bool hasTorch = GameState.Instance.DeckInstance.EquippedCards.Exists(c => c.CardName == "火把") || 
+						 GameState.Instance.DeckInstance.Hand.Exists(c => c.CardName == "火把");
+
+		var sceneGrid = _sceneRenderer.RenderScene(activeScene, weather, subs, GameState.Instance.IsIndoor, GameState.Instance.IndoorDepth, hasTorch);
 
 		string avatarName = "default_male";
 		string expression = "normal";
@@ -429,7 +438,32 @@ public partial class MainScene : Control
 				GameState.Instance.PlayerInstance.Corruption += 5;
 				var specialLoot = new Card { CardName = "帶血的日記", CardType = CardType.KeyItem, Weight = 1, Description = "地窖裡發現的帶血日記。" };
 				GameState.Instance.DeckInstance.DiscardPile.Add(specialLoot);
-				GameState.Instance.AddLog("你撬開了地窖，陰冷的穢祟之氣撲面而來...你獲得了【帶血的日記】，放入背包。");
+				GameState.Instance.AddLog("你撬開了地窖，陰冷的穢祟之氣撲面而來...你獲得了【帶血的日記】，並深入了地窖！");
+
+				// 進入室內狀態
+				GameState.Instance.IsIndoor = true;
+				GameState.Instance.IndoorDepth = 1;
+				GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
+				MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
+				break;
+			case ActionEffectType.ExploreIndoor:
+				GameState.Instance.IndoorDepth++;
+				MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(GameState.Instance.IndoorDepth);
+				GameState.Instance.AddLog($"你進一步深入，環境變得更加漆黑 (深度 {GameState.Instance.IndoorDepth})。");
+				break;
+			case ActionEffectType.ReturnOutdoor:
+				GameState.Instance.IsIndoor = false;
+				GameState.Instance.IndoorDepth = 0;
+				MapManager.Instance.CurrentIndoorScene = null;
+				GameState.Instance.AddLog("你沿著來時的路，退回到了地表的室外環境。");
+				break;
+			case ActionEffectType.LeaveIndoor:
+				GameState.Instance.IsIndoor = false;
+				int steps = GameState.Instance.IndoorDepth / 2 + 1;
+				int nextNodeId = MapManager.Instance.GetRandomDownstreamNode(GameState.Instance.EntranceNodeId, steps);
+				MapManager.Instance.CurrentNodeId = nextNodeId;
+				MapManager.Instance.CurrentIndoorScene = null;
+				GameState.Instance.AddLog($"你攀爬走出，重見天日！空間縮減讓你前進了 {steps} 個關卡。");
 				break;
 			case ActionEffectType.Search:
 				var items = new string[] { "地圖殘片", "生鏽的鑰匙", "帶血的日記" };
@@ -445,7 +479,8 @@ public partial class MainScene : Control
 				var current = mapManager.Nodes[mapManager.CurrentNodeId];
 				if (current.Connections.Count > 0)
 				{
-					int nextId = current.Connections[0];
+					// 若有分歧路徑，隨機選一條（或取第一條）
+					int nextId = current.Connections[new Random().Next(current.Connections.Count)];
 					mapManager.CurrentNodeId = nextId;
 					GameState.Instance.AddLog($"前進到了：{mapManager.Nodes[nextId].Name}。");
 				}

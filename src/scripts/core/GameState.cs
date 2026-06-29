@@ -21,6 +21,10 @@ public partial class GameState : Node
     public EndingManager EndingManagerInstance { get; set; } = new();
     public StoryUnlock StoryUnlockInstance { get; set; } = new();
 
+    public bool IsIndoor { get; set; } = false;
+    public int IndoorDepth { get; set; } = 0;
+    public int EntranceNodeId { get; set; } = 0;
+
     private int _currentDay = 1;
     private int _currentDepth = 0;
     private List<string> _gameLogs = new();
