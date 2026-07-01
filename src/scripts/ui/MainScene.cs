@@ -30,7 +30,7 @@ public partial class MainScene : Control
 		_statsLabel = GetNode<RichTextLabel>("StatsPanel/StatsLabel");
 		_mapLabel = GetNode<RichTextLabel>("MapPanel/MapLabel");
 		_systemBannerLabel = GetNode<Label>("SystemBanner/BannerLabel");
-		_actionList = GetNode<VBoxContainer>("ActionPanel/ActionList");
+		_actionList = GetNode<VBoxContainer>("CenterViewport/ActionPanel/ActionList");
 		_handContainer = GetNode<HBoxContainer>("HandUI/HandList");
 		_avatarLabel = GetNode<RichTextLabel>("AvatarPanel/AvatarLabel");
 		_sceneLabel = GetNode<RichTextLabel>("CenterViewport/SceneLabel");
