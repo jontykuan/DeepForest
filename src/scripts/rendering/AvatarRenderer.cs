@@ -56,14 +56,16 @@ public class AvatarRenderer
 					if (isLowHp || expression == "pain")
 					{
 						cell.ForegroundColor = new Color(1.0f, 0.13f, 0.13f);
-						if (cell.Character == '°') cell.Character = 'x';      
-						if (cell.Character == 'ω') cell.Character = 'Д';      
+						if (cell.Character == 'o') cell.Character = 'x';      
+						if (cell.Character == '|') cell.Character = 'X';      
+						if (cell.Character == '-') cell.Character = '=';      
 					}
 					else if (isLowSanity || expression == "insane")
 					{
 						cell.ForegroundColor = new Color(0.4f, 0.0f, 0.4f); 
-						if (cell.Character == '°') cell.Character = '◉';      
-						if (cell.Character == 'ω') cell.Character = '∀';      
+						if (cell.Character == 'o') cell.Character = '@';      
+						if (cell.Character == '|') cell.Character = '~';      
+						if (cell.Character == '-') cell.Character = '~';      
 					}
 				}
 
@@ -87,26 +89,37 @@ public class AvatarRenderer
 		TextGrid grid = new TextGrid(_width, _height);
 		grid.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
 
+		// ASCII border box for pixel-perfect alignment
 		for (int x = 0; x < _width; x++)
 		{
-			grid.SetCell(x, 0, new CharCell('═', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
-			grid.SetCell(x, _height - 1, new CharCell('═', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+			grid.SetCell(x, 0, new CharCell('-', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+			grid.SetCell(x, _height - 1, new CharCell('-', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
 		}
 		for (int y = 0; y < _height; y++)
 		{
-			grid.SetCell(0, y, new CharCell('║', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
-			grid.SetCell(_width - 1, y, new CharCell('║', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+			grid.SetCell(0, y, new CharCell('|', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+			grid.SetCell(_width - 1, y, new CharCell('|', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
 		}
+		grid.SetCell(0, 0, new CharCell('+', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+		grid.SetCell(_width - 1, 0, new CharCell('+', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+		grid.SetCell(0, _height - 1, new CharCell('+', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
+		grid.SetCell(_width - 1, _height - 1, new CharCell('+', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
 
+		// Hardcore American Cthulhu shadow/mask investigator style (pure ASCII)
 		string[] art = {
-			"   /═══════\\   ",
-			"  │  ° _ °  │  ",
-			"  │    ω    │  ",
-			"   \\_______/   "
+			"   .------------.   ",
+			"  /  __________  \\  ",
+			" /  /  _    _  \\  \\ ",
+			" | |  (o)  (o)  | | ",
+			" | |    \\  /    | | ",
+			" |  \\   |--|   /  | ",
+			" \\   \\  '--'  /   / ",
+			"  \\   `------'   /  ",
+			"   `------------'   "
 		};
 
 		int startY = _height / 2 - art.Length / 2;
-		int startX = _width / 2 - 15 / 2;
+		int startX = _width / 2 - 20 / 2;
 
 		for (int ay = 0; ay < art.Length; ay++)
 		{
@@ -114,9 +127,9 @@ public class AvatarRenderer
 			{
 				char c = art[ay][ax];
 				string tag = "avatar.body";
-				if (ay == 1 && ax >= 5 && ax <= 9) tag = "avatar.face";
-				if (ay == 2 && ax >= 5 && ax <= 9) tag = "avatar.face";
-				if (ay == 0) tag = "avatar.head";
+				if (ay == 3 && (ax == 7 || ax == 12)) tag = "avatar.face";
+				if (ay == 5 && ax >= 8 && ax <= 11) tag = "avatar.face";
+				if (ay <= 2) tag = "avatar.head";
 
 				grid.SetCell(startX + ax, startY + ay, new CharCell(c, new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0), tag));
 			}
