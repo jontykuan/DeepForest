@@ -363,11 +363,25 @@ public partial class MainScene : Control
 			prefix += $"[需要: {action.RequiredItem}]";
 		}
 
+		if (action.EffectType == ActionEffectType.LootCorpse)
+		{
+			prefix += "[理智 -1]";
+		}
+
 		return $"{prefix} ▶ {action.ActionName}";
 	}
 
 	private bool IsActionAvailable(SceneAction action, out string state)
 	{
+		if (action.EffectType == ActionEffectType.LootCorpse)
+		{
+			if (GameState.Instance.PlayerInstance.CurrentSanity < 1)
+			{
+				state = "InsufficientPoints";
+				return false;
+			}
+		}
+
 		if (!string.IsNullOrEmpty(action.RequiredItem))
 		{
 			bool hasItem = false;
@@ -574,40 +588,27 @@ public partial class MainScene : Control
 				break;
 			case ActionEffectType.LootCorpse:
 				{
+					if (GameState.Instance.PlayerInstance.CurrentSanity < 1)
+					{
+						GameState.Instance.AddLog("你的理智過低，無法搜刮屍體！");
+						break;
+					}
+					GameState.Instance.PlayerInstance.CurrentSanity -= 1;
+
 					var lastEnemy = CombatManager.Instance.LastDefeatedEnemy;
 					if (lastEnemy != null && lastEnemy.LootTable.Count > 0)
 					{
 						foreach (var loot in lastEnemy.LootTable)
 						{
 							GameState.Instance.DeckInstance.DiscardPile.Add(loot);
-							GameState.Instance.AddLog($"你從屍體上搜刮到了：【{loot.CardName}】，放入背包。");
+							GameState.Instance.AddLog($"你消耗了 1 點理智，從屍體上搜刮到了：【{loot.CardName}】，放入背包。");
 						}
 					}
 					else
 					{
-						var lootItems = new string[] { "清水", "生魚", "木材" };
-						string randomItem = lootItems[new Random().Next(lootItems.Length)];
-						var defaultLoot = CreateConsumableCard(randomItem, 5, 0, 0, 0);
-						GameState.Instance.DeckInstance.DiscardPile.Add(defaultLoot);
-						GameState.Instance.AddLog($"你從屍體上搜刮到了：【{randomItem}】，放入背包。");
+						GameState.Instance.AddLog("屍體上沒有任何有價值的物品。");
 					}
 					RemoveActionFromCurrentScene("搜屍");
-				}
-				break;
-			case ActionEffectType.DissectCorpse:
-				{
-					GameState.Instance.PlayerInstance.Corruption += 5;
-					var heart = new Card { 
-						CardName = "野獸心臟", 
-						CardType = CardType.Consumable, 
-						Weight = 1, 
-						Description = "生鮮搏動的野獸心臟。散發著難以言喻的誘惑。",
-						HpCost = -15,
-						SanityCost = 10
-					};
-					GameState.Instance.DeckInstance.DiscardPile.Add(heart);
-					GameState.Instance.AddLog("你冷酷地解剖了野獸屍體。暴戾與穢祟悄然滋長...你獲得了【野獸心臟】，放入背包。");
-					RemoveActionFromCurrentScene("解剖");
 				}
 				break;
 		}

@@ -191,19 +191,15 @@ public class CombatManager
         // 清空原場景行動，換成戰後選項
         currentNode.SceneData.Actions.Clear();
         
-        currentNode.SceneData.Actions.Add(new SceneAction { 
-            ActionName = $"搜屍 ({enemy.EnemyName})", 
-            ThresholdType = ThresholdType.None, 
-            ThresholdValue = 0, 
-            EffectType = ActionEffectType.LootCorpse 
-        });
-
-        currentNode.SceneData.Actions.Add(new SceneAction { 
-            ActionName = $"解剖 ({enemy.EnemyName})", 
-            ThresholdType = ThresholdType.Wis, 
-            ThresholdValue = 4, 
-            EffectType = ActionEffectType.DissectCorpse 
-        });
+        if (enemy.LootTable.Count > 0)
+        {
+            currentNode.SceneData.Actions.Add(new SceneAction { 
+                ActionName = $"搜屍 ({enemy.EnemyName})", 
+                ThresholdType = ThresholdType.None, 
+                ThresholdValue = 0, 
+                EffectType = ActionEffectType.LootCorpse 
+            });
+        }
 
         currentNode.SceneData.Actions.Add(new SceneAction { 
             ActionName = "繼續前進", 
