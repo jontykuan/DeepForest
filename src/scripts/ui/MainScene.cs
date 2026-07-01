@@ -37,7 +37,7 @@ public partial class MainScene : Control
 		_itemLabel = GetNode<RichTextLabel>("ItemsPanel/ItemLabel");
 
 		_sceneRenderer = new SceneRenderer(68, 24);
-		_avatarRenderer = new AvatarRenderer(20, 16);
+		_avatarRenderer = new AvatarRenderer(40, 25);
 		_mapRenderer = new MapRenderer(30, 12);
 
 		GameState.Instance.LogAdded += OnLogAdded;

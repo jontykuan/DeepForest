@@ -8,7 +8,7 @@ public class AvatarRenderer
 	private int _height;
 	private TextGrid _buffer;
 
-	public AvatarRenderer(int width = 20, int height = 16)
+	public AvatarRenderer(int width = 40, int height = 25)
 	{
 		_width = width;
 		_height = height;
@@ -20,8 +20,19 @@ public class AvatarRenderer
 		_buffer.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
 
 		string baseDir = $"res://assets/ascii_art/avatars/{avatarName}";
-		string txtPath = $"{baseDir}/base.txt";
-		string tagsPath = $"{baseDir}/base.tags";
+		
+		string fileName = "base";
+		if (currentHp < 30 || expression == "pain")
+		{
+			fileName = "pain";
+		}
+		else if (currentSanity < 30 || expression == "insane")
+		{
+			fileName = "insane";
+		}
+
+		string txtPath = $"{baseDir}/{fileName}.txt";
+		string tagsPath = $"{baseDir}/{fileName}.tags";
 
 		TextGrid baseGrid;
 		if (Godot.FileAccess.FileExists(txtPath))
@@ -30,20 +41,29 @@ public class AvatarRenderer
 		}
 		else
 		{
-			baseGrid = GenerateFallbackAvatar(avatarName);
+			string fallbackTxt = $"{baseDir}/base.txt";
+			string fallbackTags = $"{baseDir}/base.tags";
+			if (Godot.FileAccess.FileExists(fallbackTxt))
+			{
+				baseGrid = AsciiTemplate.Load(fallbackTxt, fallbackTags, "avatar");
+			}
+			else
+			{
+				baseGrid = GenerateFallbackAvatar(avatarName);
+			}
 		}
 
-		_buffer.Blit(baseGrid, 0, 0);
+		_buffer.Blit(baseGrid, 0, 0, forceOverwrite: true);
 
-		ApplyAvatarEffects(expression, currentHp, currentSanity);
+		ApplyAvatarEffects(fileName, currentHp, currentSanity);
 
 		return _buffer;
 	}
 
-	private void ApplyAvatarEffects(string expression, int hp, int sanity)
+	private void ApplyAvatarEffects(string filePrefix, int hp, int sanity)
 	{
-		bool isLowHp = hp < 30;
-		bool isLowSanity = sanity < 30;
+		bool isLowHp = hp < 30 || filePrefix == "pain";
+		bool isLowSanity = sanity < 30 || filePrefix == "insane";
 
 		for (int y = 0; y < _height; y++)
 		{
@@ -53,17 +73,13 @@ public class AvatarRenderer
 
 				if (cell.Tag == "avatar.face")
 				{
-					if (isLowHp || expression == "pain")
+					if (isLowHp)
 					{
 						cell.ForegroundColor = new Color(1.0f, 0.13f, 0.13f);
-						if (cell.Character == 'o') cell.Character = 'x';      
-						if (cell.Character == '#') cell.Character = 'X';      
 					}
-					else if (isLowSanity || expression == "insane")
+					else if (isLowSanity)
 					{
 						cell.ForegroundColor = new Color(0.4f, 0.0f, 0.4f); 
-						if (cell.Character == 'o') cell.Character = '@';      
-						if (cell.Character == '#') cell.Character = '~';      
 					}
 				}
 
