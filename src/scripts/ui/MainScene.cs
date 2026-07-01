@@ -438,6 +438,30 @@ public partial class MainScene : Control
 
 		Card card = deck.Hand[handIndex];
 
+		// 1. 傷勢卡無法主動打出
+		if (card.CardType == CardType.Injury)
+		{
+			GameState.Instance.AddLog("【傷勢】這是傷勢卡，你無法主動打出它！");
+			return;
+		}
+
+		// 2. 詛咒卡「穢祟附身」淨化邏輯
+		if (card.CardName == "穢祟附身")
+		{
+			if (player.CurrentSanity < 15)
+			{
+				GameState.Instance.AddLog("【詛咒】你的理智不足 15，無法驅除此詛咒！");
+				return;
+			}
+			player.CurrentSanity -= 15;
+			deck.Hand.Remove(card); // 永久從牌組銷毀
+			GameState.Instance.AddLog("你忍受著劇烈精神痛苦，消耗了 15 點理智，永久驅散了【穢祟附身】！");
+			UpdateHUD();
+			UpdateActionsList();
+			UpdateSceneAndAvatar();
+			return;
+		}
+
 		if (GameState.Instance.IsInCombat)
 		{
 			if (card.CardType == CardType.ActionStr || card.CardType == CardType.ActionDex || card.CardType == CardType.ActionWis)
@@ -456,6 +480,31 @@ public partial class MainScene : Control
 			thirstCost += EnvironmentSystem.Instance.GetThirstCostModifier();
 		}
 
+		// 3. 檢查是否為「卸載裝備卡」
+		if (card.HasMeta("parent_card"))
+		{
+			Card parentCard = (Card)card.GetMeta("parent_card");
+			if (player.CurrentHunger < card.HungerCost || player.CurrentThirst < thirstCost ||
+				player.CurrentHp < card.HpCost || player.CurrentSanity < card.SanityCost)
+			{
+				GameState.Instance.AddLog("點數不足，無法打出此卡牌！");
+				return;
+			}
+
+			player.CurrentHunger -= card.HungerCost;
+			player.CurrentThirst -= thirstCost;
+			player.CurrentHp -= card.HpCost;
+			player.CurrentSanity -= card.SanityCost;
+
+			deck.UnequipCard(parentCard, card);
+			GameState.Instance.AddLog($"卸下了裝備【{parentCard.CardName}】。原卡已回到手牌，卸載卡已銷毀。");
+
+			UpdateHUD();
+			UpdateActionsList();
+			UpdateSceneAndAvatar();
+			return;
+		}
+
 		if (player.CurrentHunger < card.HungerCost || player.CurrentThirst < thirstCost ||
 			player.CurrentHp < card.HpCost || player.CurrentSanity < card.SanityCost)
 		{
@@ -468,29 +517,40 @@ public partial class MainScene : Control
 		player.CurrentHp -= card.HpCost;
 		player.CurrentSanity -= card.SanityCost;
 
-		deck.DiscardCard(card);
-
 		int str = card.StrValue;
-		if (str > 0 && StatusEffect.HasBrokenArm(deck.Hand))
+		if (str > 0)
 		{
-			str = Math.Max(1, str / 2); 
+			if (StatusEffect.HasBrokenArm(deck.Hand))
+			{
+				str = Math.Max(1, str / 2); 
+			}
+			int fractureCount = StatusEffect.GetFractureCount(deck.Hand);
+			if (fractureCount > 0)
+			{
+				str = Math.Max(1, str >> fractureCount);
+			}
 		}
 
-		TurnManager.Instance.AccumulatedStr += str;
-		TurnManager.Instance.AccumulatedDex += card.DexValue;
-		TurnManager.Instance.AccumulatedWis += card.WisValue;
+		if (card.CardType == CardType.ActionStr || card.CardType == CardType.ActionDex || card.CardType == CardType.ActionWis)
+		{
+			TurnManager.Instance.AccumulatedStr += str;
+			TurnManager.Instance.AccumulatedDex += card.DexValue;
+			TurnManager.Instance.AccumulatedWis += card.WisValue;
+		}
 
 		if (card.CardType == CardType.Equipment)
 		{
 			deck.EquipCard(card);
-			GameState.Instance.AddLog($"裝備了 {card.CardName}。已從牌組移出，加入卸載卡。");
+			GameState.Instance.AddLog($"裝備了 {card.CardName}。已從手牌移出，卸載卡已加入棄牌堆。");
 		}
 		else if (card.CardType == CardType.Consumable)
 		{
-			GameState.Instance.AddLog($"使用了 {card.CardName}。回復飢餓/口渴值。");
+			deck.Hand.Remove(card); // 永久消耗
+			GameState.Instance.AddLog($"使用了消耗品【{card.CardName}】。");
 		}
 		else
 		{
+			deck.DiscardCard(card);
 			GameState.Instance.AddLog($"打出了 {card.CardName}。力量+{str}，靈巧+{card.DexValue}，智慧+{card.WisValue}。");
 		}
 
@@ -511,26 +571,50 @@ public partial class MainScene : Control
 				TurnManager.Instance.TriggerDayChange();
 				break;
 			case ActionEffectType.Fish:
-				var fish = CreateConsumableCard("生魚", 5, -1, 2, -2); 
-				GameState.Instance.DeckInstance.DiscardPile.Add(fish);
-				GameState.Instance.AddLog("捕獲了生魚，加入棄牌堆。");
+				{
+					var fish = CreateConsumableCard("生魚", 5, -1, 2, -2); 
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(fish))
+					{
+						GameState.Instance.AddLog("捕獲了生魚，放入背包。");
+					}
+					else
+					{
+						GameState.Instance.AddLog("【過重】你的背包負重不足以容納【生魚】，只好將其棄置！");
+					}
+				}
 				break;
 			case ActionEffectType.CollectWater:
-				var water = CreateConsumableCard("清水", 0, 8, 0, 0);
-				GameState.Instance.DeckInstance.DiscardPile.Add(water);
-				GameState.Instance.AddLog("用水瓶裝滿了清水，加入棄牌堆。");
+				{
+					var water = CreateConsumableCard("清水", 0, 8, 0, 0);
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(water))
+					{
+						GameState.Instance.AddLog("用水瓶裝滿了清水，放入背包。");
+					}
+					else
+					{
+						GameState.Instance.AddLog("【過重】你的背包負重不足以容納【清水】，只好將其倒掉！");
+					}
+				}
 				break;
 			case ActionEffectType.PryCellar:
-				GameState.Instance.PlayerInstance.Corruption += 5;
-				var specialLoot = new Card { CardName = "帶血的日記", CardType = CardType.KeyItem, Weight = 1, Description = "地窖裡發現的帶血日記。" };
-				GameState.Instance.DeckInstance.DiscardPile.Add(specialLoot);
-				GameState.Instance.AddLog("你撬開了地窖，陰冷的穢祟之氣撲面而來...你獲得了【帶血的日記】，並深入了地窖！");
+				{
+					GameState.Instance.PlayerInstance.Corruption += 5;
+					var specialLoot = new Card { CardName = "帶血的日記", CardType = CardType.KeyItem, Weight = 1, Description = "地窖裡發現的帶血日記。" };
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(specialLoot))
+					{
+						GameState.Instance.AddLog("你撬開了地窖，陰冷的穢祟之氣撲面而來...你獲得了【帶血的日記】，放入背包並深入了地窖！");
+					}
+					else
+					{
+						GameState.Instance.AddLog("你撬開了地窖，陰冷的氣息撲面而來...但背包裝壓不下【帶血的日記】，你只能空手深入地窖！");
+					}
 
-				// 進入室內狀態
-				GameState.Instance.IsIndoor = true;
-				GameState.Instance.IndoorDepth = 1;
-				GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
-				MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
+					// 進入室內狀態
+					GameState.Instance.IsIndoor = true;
+					GameState.Instance.IndoorDepth = 1;
+					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
+					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
+				}
 				break;
 			case ActionEffectType.ExploreIndoor:
 				GameState.Instance.IndoorDepth++;
@@ -552,11 +636,19 @@ public partial class MainScene : Control
 				GameState.Instance.AddLog($"你攀爬走出，重見天日！空間縮減讓你前進了 {steps} 個關卡。");
 				break;
 			case ActionEffectType.Search:
-				var items = new string[] { "地圖殘片", "生鏽的鑰匙", "帶血的日記" };
-				string chosenItem = items[new Random().Next(items.Length)];
-				var keyItem = new Card { CardName = chosenItem, CardType = CardType.KeyItem, Weight = 1, Description = $"重要的線索：{chosenItem}。" };
-				GameState.Instance.DeckInstance.DiscardPile.Add(keyItem);
-				GameState.Instance.AddLog($"找到了【{chosenItem}】，放入背包（棄牌堆）。");
+				{
+					var items = new string[] { "地圖殘片", "生鏽的鑰匙", "帶血的日記" };
+					string chosenItem = items[new Random().Next(items.Length)];
+					var keyItem = new Card { CardName = chosenItem, CardType = CardType.KeyItem, Weight = 1, Description = $"重要的線索：{chosenItem}。" };
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(keyItem))
+					{
+						GameState.Instance.AddLog($"找到了【{chosenItem}】，放入背包。");
+					}
+					else
+					{
+						GameState.Instance.AddLog($"【過重】你的背包負重不足以容納【{chosenItem}】，你只能無奈將其丟棄！");
+					}
+				}
 				break;
 			case ActionEffectType.MoveForward:
 				if (GameState.Instance.IsInCombat)
@@ -600,8 +692,14 @@ public partial class MainScene : Control
 					{
 						foreach (var loot in lastEnemy.LootTable)
 						{
-							GameState.Instance.DeckInstance.DiscardPile.Add(loot);
-							GameState.Instance.AddLog($"你消耗了 1 點理智，從屍體上搜刮到了：【{loot.CardName}】，放入背包。");
+							if (GameState.Instance.DeckInstance.AddCardToDiscardPile(loot))
+							{
+								GameState.Instance.AddLog($"你消耗了 1 點理智，從屍體上搜刮到了：【{loot.CardName}】，放入背包。");
+							}
+							else
+							{
+								GameState.Instance.AddLog($"【過重】背包過重，無法容納【{loot.CardName}】，你將其遺留在屍體上！");
+							}
 						}
 					}
 					else
@@ -616,8 +714,14 @@ public partial class MainScene : Control
 					var woodLoots = new string[] { "清水", "生魚", "木材" };
 					string item = woodLoots[new Random().Next(woodLoots.Length)];
 					var card = CreateConsumableCard(item, 5, 0, 0, 0);
-					GameState.Instance.DeckInstance.DiscardPile.Add(card);
-					GameState.Instance.AddLog($"你開啟了木箱，獲得了：【{item}】，放入背包。");
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(card))
+					{
+						GameState.Instance.AddLog($"你開啟了木箱，獲得了：【{item}】，放入背包。");
+					}
+					else
+					{
+						GameState.Instance.AddLog($"【過重】背包過重，無法裝下【{item}】，你只好將其留在木箱中！");
+					}
 					RemoveActionFromCurrentScene("開啟");
 				}
 				break;
@@ -631,8 +735,14 @@ public partial class MainScene : Control
 						Weight = 2, 
 						Description = $"實用的冒險工具：{item}。" 
 					};
-					GameState.Instance.DeckInstance.DiscardPile.Add(card);
-					GameState.Instance.AddLog($"你合力撬開了鐵箱，獲得了：【{item}】，放入背包。");
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(card))
+					{
+						GameState.Instance.AddLog($"你合力撬開了鐵箱，獲得了：【{item}】，放入背包。");
+					}
+					else
+					{
+						GameState.Instance.AddLog($"【過重】背包過重，無法裝下【{item}】，你將其遺留在鐵箱內！");
+					}
 					RemoveActionFromCurrentScene("撬開");
 				}
 				break;
@@ -647,8 +757,14 @@ public partial class MainScene : Control
 						StrValue = 1,
 						Description = "沾滿暗紅鏽跡的開山柴刀。可於戰鬥中使力量卡牌點數 +1。"
 					};
-					GameState.Instance.DeckInstance.DiscardPile.Add(sword);
-					GameState.Instance.AddLog("當你觸碰那刻印箱的瞬間，刺骨的冰冷低語湧入腦海（理智-10，穢祟+10）...你獲得了【柴刀】！");
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(sword))
+					{
+						GameState.Instance.AddLog("當你觸碰那刻印箱的瞬間，刺骨的冰冷低語湧入腦海（理智-10，穢祟+10）...你獲得了【柴刀】！");
+					}
+					else
+					{
+						GameState.Instance.AddLog("當你觸碰刻印箱的瞬間，刺骨低語湧入腦海（理智-10，穢祟+10）...但背包裝不下【柴刀】，你將其掉在地上！");
+					}
 					RemoveActionFromCurrentScene("觸摸");
 				}
 				break;
@@ -690,8 +806,14 @@ public partial class MainScene : Control
 					}
 					GameState.Instance.PlayerInstance.CurrentHunger -= 10;
 					var ration = CreateConsumableCard("乾糧", 0, 0, -15, 0);
-					GameState.Instance.DeckInstance.DiscardPile.Add(ration);
-					GameState.Instance.AddLog("你將物資與獵人交易（飢餓值 -10），獲得了【乾糧】。");
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(ration))
+					{
+						GameState.Instance.AddLog("你將物資與獵人交易（飢餓值 -10），獲得了【乾糧】。");
+					}
+					else
+					{
+						GameState.Instance.AddLog("你將物資與獵人交易（飢餓值 -10），但背包過重裝不下【乾糧】，只好把乾糧遺棄了！");
+					}
 					RemoveActionFromCurrentScene("與");
 				}
 				break;
@@ -706,8 +828,14 @@ public partial class MainScene : Control
 						Weight = 1,
 						Description = "在魔女指尖跳動的瘋狂殘影。被打出時可使本回合所有智慧卡點數翻倍，但代價是永久扣除 5 點最大理智。"
 					};
-					GameState.Instance.DeckInstance.DiscardPile.Add(nightmare);
-					GameState.Instance.AddLog("魔女的指甲深深刺入你的掌心，滾燙的禁忌知識在血液中燃燒（體力-20，理智-10，穢祟+15）。你獲得了【舊日殘影】。");
+					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(nightmare))
+					{
+						GameState.Instance.AddLog("魔女的指甲深深刺入你的掌心，滾燙的禁忌知識在血液中燃燒（體力-20，理智-10，穢祟+15）。你獲得了【舊日殘影】。");
+					}
+					else
+					{
+						GameState.Instance.AddLog("魔女的指甲深深刺入掌心，滾燙的知識在燃燒（體力-20，理智-10，穢祟+15）...但背包裝不下【舊日殘影】，殘影逸散在空氣中。");
+					}
 					RemoveActionFromCurrentScene("接受");
 				}
 				break;

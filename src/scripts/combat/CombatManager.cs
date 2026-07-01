@@ -222,7 +222,21 @@ public class CombatManager
 
     private int GetCardValue(Card c)
     {
-        return c.StrValue + c.DexValue + c.WisValue;
+        int str = c.StrValue;
+        if (str > 0)
+        {
+            var deck = GameState.Instance.DeckInstance;
+            if (StatusEffect.HasBrokenArm(deck.Hand))
+            {
+                str = Math.Max(1, str / 2);
+            }
+            int fractureCount = StatusEffect.GetFractureCount(deck.Hand);
+            if (fractureCount > 0)
+            {
+                str = Math.Max(1, str >> fractureCount);
+            }
+        }
+        return str + c.DexValue + c.WisValue;
     }
 
     private string GetTypeName(CardType type)

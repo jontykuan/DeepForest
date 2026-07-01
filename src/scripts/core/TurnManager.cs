@@ -69,6 +69,12 @@ public partial class TurnManager : Node
             player.CurrentHp -= 3;
             GameState.Instance.AddLog("傷口感染惡化，扣減 3 點體力。");
         }
+
+        if (StatusEffect.HasEffect(deck.Hand, "穢祟附身"))
+        {
+            player.CurrentSanity -= 5;
+            GameState.Instance.AddLog("手牌中的【穢祟附身】發揮邪祟效果，扣減了你 5 點理智。");
+        }
     }
 
     private void DrawPhase()

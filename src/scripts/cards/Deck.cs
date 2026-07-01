@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using DeepForest.Core;
 
 namespace DeepForest.Cards;
 
@@ -48,9 +49,14 @@ public partial class Deck : Node
 
     public bool DrawCards(int count)
     {
+        int limit = GameState.Instance.PlayerInstance.HandLimit;
         bool triggeredReshuffle = false;
         for (int i = 0; i < count; i++)
         {
+            if (Hand.Count >= limit)
+            {
+                break;
+            }
             if (DrawPile.Count == 0)
             {
                 if (DiscardPile.Count == 0)
@@ -62,7 +68,14 @@ public partial class Deck : Node
             }
             Card card = DrawPile[0];
             DrawPile.RemoveAt(0);
+            
+            // 抽到時立即觸發詛咒效果
             Hand.Add(card);
+            if (card.CardName == "穢祟附身")
+            {
+                GameState.Instance.PlayerInstance.CurrentSanity -= 15;
+                GameState.Instance.AddLog("【詛咒】你抽到了【穢祟附身】！陰冷的低語侵蝕了你的理智（理智 -15）！");
+            }
         }
         EmitSignal(SignalName.HandChanged);
         EmitSignal(SignalName.DeckChanged);
@@ -147,7 +160,17 @@ public partial class Deck : Node
         foreach (var c in DrawPile) total += c.Weight;
         foreach (var c in Hand) total += c.Weight;
         foreach (var c in DiscardPile) total += c.Weight;
-        foreach (var c in EquippedCards) total += c.Weight;
         return total;
+    }
+
+    public bool AddCardToDiscardPile(Card card)
+    {
+        if (GetTotalWeight() + card.Weight > GameState.Instance.PlayerInstance.DeckCapacity)
+        {
+            return false;
+        }
+        DiscardPile.Add(card);
+        EmitSignal(SignalName.DeckChanged);
+        return true;
     }
 }

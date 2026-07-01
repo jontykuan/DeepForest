@@ -21,4 +21,15 @@ public static class StatusEffect
     public static bool HasBrokenFinger(IEnumerable<Card> cards) => HasEffect(cards, "手指骨折");
     public static bool HasBrokenArm(IEnumerable<Card> cards) => HasEffect(cards, "手臂脫臼");
     public static bool HasTextDistortion(IEnumerable<Card> cards) => HasEffect(cards, "文字扭曲") || HasEffect(cards, "幻聽");
+
+    public static int GetFractureCount(IEnumerable<Card> cards)
+    {
+        int count = 0;
+        foreach (var card in cards)
+        {
+            if (card.CardName == "骨折")
+                count++;
+        }
+        return count;
+    }
 }
