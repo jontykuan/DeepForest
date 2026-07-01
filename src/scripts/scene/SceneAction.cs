@@ -16,7 +16,15 @@ public enum ActionEffectType
     ReturnOutdoor,
     LootCorpse,
     DissectCorpse,
-    CombatClash
+    CombatClash,
+    OpenWoodChest,
+    OpenIronChest,
+    TouchCursedChest,
+    EnterNormalCabin,
+    EnterStrangeCabin,
+    EnterCave,
+    TradeHunter,
+    WitchRitual
 }
 
 public enum ThresholdType

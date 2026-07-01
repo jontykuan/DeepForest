@@ -190,6 +190,15 @@ public class CombatManager
         
         // 清空原場景行動，換成戰後選項
         currentNode.SceneData.Actions.Clear();
+
+        // 移除戰鬥貼圖，避免原路返回或刷新時重啟戰鬥
+        for (int i = currentNode.SceneData.Decals.Count - 1; i >= 0; i--)
+        {
+            if (currentNode.SceneData.Decals[i].StartsWith("combat_"))
+            {
+                currentNode.SceneData.Decals.RemoveAt(i);
+            }
+        }
         
         if (enemy.LootTable.Count > 0)
         {

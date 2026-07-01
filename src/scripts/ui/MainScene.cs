@@ -611,6 +611,106 @@ public partial class MainScene : Control
 					RemoveActionFromCurrentScene("搜屍");
 				}
 				break;
+			case ActionEffectType.OpenWoodChest:
+				{
+					var woodLoots = new string[] { "清水", "生魚", "木材" };
+					string item = woodLoots[new Random().Next(woodLoots.Length)];
+					var card = CreateConsumableCard(item, 5, 0, 0, 0);
+					GameState.Instance.DeckInstance.DiscardPile.Add(card);
+					GameState.Instance.AddLog($"你開啟了木箱，獲得了：【{item}】，放入背包。");
+					RemoveActionFromCurrentScene("開啟");
+				}
+				break;
+			case ActionEffectType.OpenIronChest:
+				{
+					var tools = new string[] { "火把", "水瓶" };
+					string item = tools[new Random().Next(tools.Length)];
+					var card = new Card { 
+						CardName = item, 
+						CardType = CardType.Equipment, 
+						Weight = 2, 
+						Description = $"實用的冒險工具：{item}。" 
+					};
+					GameState.Instance.DeckInstance.DiscardPile.Add(card);
+					GameState.Instance.AddLog($"你合力撬開了鐵箱，獲得了：【{item}】，放入背包。");
+					RemoveActionFromCurrentScene("撬開");
+				}
+				break;
+			case ActionEffectType.TouchCursedChest:
+				{
+					GameState.Instance.PlayerInstance.CurrentSanity -= 10;
+					GameState.Instance.PlayerInstance.Corruption += 10;
+					var sword = new Card {
+						CardName = "柴刀",
+						CardType = CardType.Equipment,
+						Weight = 3,
+						StrValue = 1,
+						Description = "沾滿暗紅鏽跡的開山柴刀。可於戰鬥中使力量卡牌點數 +1。"
+					};
+					GameState.Instance.DeckInstance.DiscardPile.Add(sword);
+					GameState.Instance.AddLog("當你觸碰那刻印箱的瞬間，刺骨的冰冷低語湧入腦海（理智-10，穢祟+10）...你獲得了【柴刀】！");
+					RemoveActionFromCurrentScene("觸摸");
+				}
+				break;
+			case ActionEffectType.EnterNormalCabin:
+				{
+					GameState.Instance.IsIndoor = true;
+					GameState.Instance.IndoorDepth = 1;
+					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
+					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
+					GameState.Instance.AddLog("你推開木門，進入了陰暗的木屋內。");
+				}
+				break;
+			case ActionEffectType.EnterStrangeCabin:
+				{
+					GameState.Instance.PlayerInstance.CurrentSanity -= 10;
+					GameState.Instance.IsIndoor = true;
+					GameState.Instance.IndoorDepth = 3;
+					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
+					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(3);
+					GameState.Instance.AddLog("推開血色木門的剎那，刺鼻的血腥與瘋狂念頭撲面而來（理智 -10）！你深入了小屋深處。");
+				}
+				break;
+			case ActionEffectType.EnterCave:
+				{
+					GameState.Instance.PlayerInstance.CurrentHp -= 15;
+					GameState.Instance.IsIndoor = true;
+					GameState.Instance.IndoorDepth = 1;
+					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
+					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
+					GameState.Instance.AddLog("你小心地爬入狹窄的石洞，尖銳的岩石劃傷了你的皮膚（體力 -15）。你進入了黑暗的洞穴。");
+				}
+				break;
+			case ActionEffectType.TradeHunter:
+				{
+					if (GameState.Instance.PlayerInstance.CurrentHunger < 10)
+					{
+						GameState.Instance.AddLog("你已經飢餓交迫，無法進行交易！");
+						break;
+					}
+					GameState.Instance.PlayerInstance.CurrentHunger -= 10;
+					var ration = CreateConsumableCard("乾糧", 0, 0, -15, 0);
+					GameState.Instance.DeckInstance.DiscardPile.Add(ration);
+					GameState.Instance.AddLog("你將物資與獵人交易（飢餓值 -10），獲得了【乾糧】。");
+					RemoveActionFromCurrentScene("與");
+				}
+				break;
+			case ActionEffectType.WitchRitual:
+				{
+					GameState.Instance.PlayerInstance.CurrentHp -= 20;
+					GameState.Instance.PlayerInstance.CurrentSanity -= 10;
+					GameState.Instance.PlayerInstance.Corruption += 15;
+					var nightmare = new Card {
+						CardName = "舊日殘影",
+						CardType = CardType.Passive,
+						Weight = 1,
+						Description = "在魔女指尖跳動的瘋狂殘影。被打出時可使本回合所有智慧卡點數翻倍，但代價是永久扣除 5 點最大理智。"
+					};
+					GameState.Instance.DeckInstance.DiscardPile.Add(nightmare);
+					GameState.Instance.AddLog("魔女的指甲深深刺入你的掌心，滾燙的禁忌知識在血液中燃燒（體力-20，理智-10，穢祟+15）。你獲得了【舊日殘影】。");
+					RemoveActionFromCurrentScene("接受");
+				}
+				break;
 		}
 
 		TurnManager.Instance.AccumulatedStr = 0;

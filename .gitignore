@@ -4,4 +4,6 @@ bin/
 obj/
 *.user
 *.suo
-git說明.txt
+設計原案/
+AGENTS.md
+GAME_DESIGN.md

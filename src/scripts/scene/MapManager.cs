@@ -2,6 +2,8 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using DeepForest.Core;
+using DeepForest.Cards;
+using DeepForest.Combat;
 
 namespace DeepForest.Scene;
 
@@ -32,6 +34,7 @@ public partial class MapManager : Node
         { 
             _currentNodeId = value; 
             ExploredNodeIds.Add(value); 
+            OnPlayerEnterNode(value);
         } 
     }
 
@@ -74,7 +77,12 @@ public partial class MapManager : Node
         // 可選的地形與地面環境
         string[] grounds = { "dirt", "grass", "planks" };
         string[] terrains = { "woodland", "riverside", "swamp", "stone_wall", "ruins", "cabin" };
-        string[] decalPool = { "window", "door", "sofa", "npc", "chest" };
+        string[] decalPool = { 
+            "window", "door", "sofa", "npc", "chest", 
+            "chest_wood", "chest_iron", "chest_cursed", 
+            "door_normal", "door_strange", "door_cave", 
+            "npc_hunter", "combat_wolf" 
+        };
 
         // Layer 1~3: 隨機關卡
         for (int depth = 1; depth <= 3; depth++)
@@ -100,11 +108,15 @@ public partial class MapManager : Node
                     RightTerrain = rightT
                 };
 
-                // 隨機加入 0~2 個貼圖 (Decals)
+                // 隨機加入 0~2 個貼圖 (Decals) - 基於場景相容性過濾
                 int numDecals = rand.Next(0, 3);
                 for (int dIdx = 0; dIdx < numDecals; dIdx++)
                 {
                     string decalType = decalPool[rand.Next(decalPool.Length)];
+                    if (!IsDecalAllowedInTerrain(decalType, leftT, rightT))
+                    {
+                        continue;
+                    }
                     string side = rand.Next(2) == 0 ? "left" : "right";
                     sd.Decals.Add($"{decalType}_{side}");
                 }
@@ -262,6 +274,30 @@ public partial class MapManager : Node
                 case "chest":
                     sd.Actions.Add(new SceneAction { ActionName = $"撬開{side}寶箱", ThresholdType = ThresholdType.Str, ThresholdValue = 4, EffectType = ActionEffectType.Search });
                     break;
+                case "chest_wood":
+                    sd.Actions.Add(new SceneAction { ActionName = $"開啟{side}木箱", ThresholdType = ThresholdType.None, ThresholdValue = 0, EffectType = ActionEffectType.OpenWoodChest });
+                    break;
+                case "chest_iron":
+                    sd.Actions.Add(new SceneAction { ActionName = $"撬開{side}鐵箱", ThresholdType = ThresholdType.Str, ThresholdValue = 4, EffectType = ActionEffectType.OpenIronChest });
+                    break;
+                case "chest_cursed":
+                    sd.Actions.Add(new SceneAction { ActionName = $"觸摸{side}刻印箱", ThresholdType = ThresholdType.Wis, ThresholdValue = 3, EffectType = ActionEffectType.TouchCursedChest });
+                    break;
+                case "door_normal":
+                    sd.Actions.Add(new SceneAction { ActionName = $"進入{side}木屋", ThresholdType = ThresholdType.None, ThresholdValue = 0, EffectType = ActionEffectType.EnterNormalCabin });
+                    break;
+                case "door_strange":
+                    sd.Actions.Add(new SceneAction { ActionName = $"推開{side}血色門", ThresholdType = ThresholdType.Wis, ThresholdValue = 2, EffectType = ActionEffectType.EnterStrangeCabin });
+                    break;
+                case "door_cave":
+                    sd.Actions.Add(new SceneAction { ActionName = $"爬入{side}洞穴", ThresholdType = ThresholdType.Dex, ThresholdValue = 3, EffectType = ActionEffectType.EnterCave });
+                    break;
+                case "npc_hunter":
+                    sd.Actions.Add(new SceneAction { ActionName = $"與{side}獵人交易", ThresholdType = ThresholdType.Wis, ThresholdValue = 1, EffectType = ActionEffectType.TradeHunter });
+                    break;
+                case "npc_witch":
+                    sd.Actions.Add(new SceneAction { ActionName = $"接受{side}魔女儀式", ThresholdType = ThresholdType.Wis, ThresholdValue = 4, EffectType = ActionEffectType.WitchRitual });
+                    break;
             }
         }
 
@@ -386,5 +422,119 @@ public partial class MapManager : Node
             }
         }
         return currentId;
+    }
+
+    private void OnPlayerEnterNode(int nodeId)
+    {
+        if (nodeId == 0) return;
+        var node = Nodes[nodeId];
+        var sd = node.SceneData;
+        var player = GameState.Instance.PlayerInstance;
+        var deck = GameState.Instance.DeckInstance;
+
+        // 1. 低理智幻覺事件 (Sanity < 30)
+        if (player.CurrentSanity < 30)
+        {
+            if (!sd.Decals.Contains("combat_ghost_left"))
+            {
+                sd.Decals.Add("combat_ghost_left");
+                GameState.Instance.AddLog("【幻覺】在稀薄的理智中，你隱約看見左側迷霧裡晃動著怨靈的陰影...");
+            }
+        }
+        else
+        {
+            sd.Decals.Remove("combat_ghost_left");
+        }
+
+        // 2. 牌組持有「帶血的日記」觸發神秘 NPC 事件
+        bool hasDiary = deck.Hand.Exists(c => c.CardName == "帶血的日記") || 
+                        deck.DiscardPile.Exists(c => c.CardName == "帶血的日記") ||
+                        deck.DrawPile.Exists(c => c.CardName == "帶血的日記") ||
+                        deck.EquippedCards.Exists(c => c.CardName == "帶血的日記");
+
+        if (hasDiary)
+        {
+            if (!sd.Decals.Contains("npc_witch_right"))
+            {
+                sd.Decals.Add("npc_witch_right");
+                GameState.Instance.AddLog("身上的日記隱隱發熱，一名神祕的魔女出現在右側，靜靜地看著你。");
+            }
+        }
+
+        // 重新生成行動
+        bool isExit = (nodeId == Nodes.Count - 1);
+        GenerateDynamicActions(sd, isStart: false, isExit: isExit);
+
+        // 3. 檢查是否有戰鬥貼圖並自動觸發戰鬥
+        foreach (var decal in sd.Decals)
+        {
+            if (decal.StartsWith("combat_wolf"))
+            {
+                var enemyData = GetEnemyDataForDecal("combat_wolf");
+                CombatManager.Instance.StartCombat(enemyData);
+                break;
+            }
+            else if (decal.StartsWith("combat_ghost"))
+            {
+                var enemyData = GetEnemyDataForDecal("combat_ghost");
+                CombatManager.Instance.StartCombat(enemyData);
+                break;
+            }
+        }
+    }
+
+    private EnemyData GetEnemyDataForDecal(string decalType)
+    {
+        var enemy = new EnemyData();
+        if (decalType == "combat_wolf")
+        {
+            enemy.EnemyName = "野狼";
+            enemy.MaxHp = 3;
+            enemy.AttackPower = 10;
+            enemy.IsAggressive = true;
+            enemy.HideHp = false;
+            enemy.DecalName = "combat_wolf_right";
+            
+            enemy.ActionDeck.Add(new Card { CardName = "撕咬", CardType = CardType.ActionStr, StrValue = 2 });
+            enemy.ActionDeck.Add(new Card { CardName = "猛撲", CardType = CardType.ActionDex, DexValue = 3 });
+            enemy.ActionDeck.Add(new Card { CardName = "試探", CardType = CardType.ActionWis, WisValue = 1 });
+
+            enemy.LootTable.Add(new Card { CardName = "狼肉", CardType = CardType.Consumable, Description = "新鮮帶血的狼肉。", HpCost = -8, HungerCost = -20 });
+            enemy.LootTable.Add(new Card { CardName = "狼皮", CardType = CardType.Equipment, Description = "保暖粗糙的狼皮。", Weight = 2 });
+        }
+        else if (decalType == "combat_ghost")
+        {
+            enemy.EnemyName = "怨靈";
+            enemy.MaxHp = 4;
+            enemy.AttackPower = 15;
+            enemy.IsAggressive = false;
+            enemy.HideHp = true;
+            enemy.DecalName = "combat_ghost_left";
+
+            enemy.ActionDeck.Add(new Card { CardName = "陰冷低語", CardType = CardType.ActionWis, WisValue = 3 });
+            enemy.ActionDeck.Add(new Card { CardName = "鬼影重重", CardType = CardType.ActionDex, DexValue = 2 });
+        }
+        return enemy;
+    }
+
+    private bool IsDecalAllowedInTerrain(string decalType, string left, string right)
+    {
+        return IsDecalAllowedSingle(decalType, left) || IsDecalAllowedSingle(decalType, right);
+    }
+
+    private bool IsDecalAllowedSingle(string decalType, string terrain)
+    {
+        return decalType switch
+        {
+            "sofa" or "window" => (terrain == "cabin" || terrain == "ruins"),
+            "door_normal" or "door_strange" => (terrain == "woodland" || terrain == "stone_wall" || terrain == "ruins" || terrain == "cabin"),
+            "door_cave" => (terrain == "stone_wall" || terrain == "swamp" || terrain == "ruins"),
+            "combat_wolf" => (terrain == "woodland" || terrain == "swamp" || terrain == "riverside"),
+            "combat_ghost" => (terrain == "ruins" || terrain == "swamp" || terrain == "stone_wall"),
+            "npc_hunter" => (terrain == "woodland" || terrain == "riverside" || terrain == "cabin"),
+            "npc_witch" => (terrain == "swamp" || terrain == "ruins" || terrain == "stone_wall"),
+            "chest_wood" or "chest_iron" or "chest_cursed" => true,
+            _ => true
+        };
     }
 }
