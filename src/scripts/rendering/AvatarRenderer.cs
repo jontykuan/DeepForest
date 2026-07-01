@@ -57,15 +57,13 @@ public class AvatarRenderer
 					{
 						cell.ForegroundColor = new Color(1.0f, 0.13f, 0.13f);
 						if (cell.Character == 'o') cell.Character = 'x';      
-						if (cell.Character == '|') cell.Character = 'X';      
-						if (cell.Character == '-') cell.Character = '=';      
+						if (cell.Character == '#') cell.Character = 'X';      
 					}
 					else if (isLowSanity || expression == "insane")
 					{
 						cell.ForegroundColor = new Color(0.4f, 0.0f, 0.4f); 
 						if (cell.Character == 'o') cell.Character = '@';      
-						if (cell.Character == '|') cell.Character = '~';      
-						if (cell.Character == '-') cell.Character = '~';      
+						if (cell.Character == '#') cell.Character = '~';      
 					}
 				}
 
@@ -105,17 +103,20 @@ public class AvatarRenderer
 		grid.SetCell(0, _height - 1, new CharCell('+', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
 		grid.SetCell(_width - 1, _height - 1, new CharCell('+', new Color(1, 1, 1), new Color(0, 0, 0), "avatar.bg"));
 
-		// Hardcore American Cthulhu shadow/mask investigator style (pure ASCII)
+		// Hardcore American Cthulhu shadow/mask investigator style (density-shaded pure ASCII)
 		string[] art = {
-			"   .------------.   ",
-			"  /  __________  \\  ",
-			" /  /  _    _  \\  \\ ",
-			" | |  (o)  (o)  | | ",
-			" | |    \\  /    | | ",
-			" |  \\   |--|   /  | ",
-			" \\   \\  '--'  /   / ",
-			"  \\   `------'   /  ",
-			"   `------------'   "
+			"    .::::::::::.    ",
+			"  .##@@@@@@@@@@##.  ",
+			" :###@@@@@@@@@@###: ",
+			":####@        @####:",
+			"####@  (o)  (o)  @####",
+			"####@    \\  /    @####",
+			"####@    [##]    @####",
+			":####@          @####:",
+			":#####@        @#####:",
+			" :######@@@@@@######: ",
+			"  .################.  ",
+			"    '::::::::::::'    "
 		};
 
 		int startY = _height / 2 - art.Length / 2;
@@ -127,9 +128,10 @@ public class AvatarRenderer
 			{
 				char c = art[ay][ax];
 				string tag = "avatar.body";
-				if (ay == 3 && (ax == 7 || ax == 12)) tag = "avatar.face";
-				if (ay == 5 && ax >= 8 && ax <= 11) tag = "avatar.face";
-				if (ay <= 2) tag = "avatar.head";
+				if (ay == 4 && ((ax >= 7 && ax <= 9) || (ax >= 12 && ax <= 14))) tag = "avatar.face";
+				if (ay == 5 && (ax >= 9 && ax <= 12)) tag = "avatar.face";
+				if (ay == 6 && (ax >= 9 && ax <= 12)) tag = "avatar.face";
+				if (ay <= 3) tag = "avatar.head";
 
 				grid.SetCell(startX + ax, startY + ay, new CharCell(c, new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0), tag));
 			}
