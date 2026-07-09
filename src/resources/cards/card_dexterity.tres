@@ -4,14 +4,15 @@
 
 [resource]
 script = ExtResource("1_card_script")
-CardName = "靈巧行動"
+CardId = 34
+CardName = "敏捷1"
 CardType = 1
-Weight = 1
-StrValue = 0
+Description = "提供敏捷 1 點。"
 DexValue = 1
-WisValue = 0
-HungerCost = 1
-ThirstCost = 0
 HpCost = 0
+HungerCost = 1
 SanityCost = 0
-Description = "進行 靈巧行動。"
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

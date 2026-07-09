@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 1
+CardId = 43
+CardName = "捉迷藏"
+Description = "消耗 5 飢餓、3 口渴。抽 2 張卡，其中每張動作卡獲得敏捷 1、道具卡獲得力量 1、負面卡獲得疲勞 1 張。"
+DexValue = 0
+HpCost = 0
+HungerCost = 5
+MaxUses = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 3
+Weight = 1
+WisValue = 0

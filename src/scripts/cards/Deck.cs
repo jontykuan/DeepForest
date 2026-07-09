@@ -2,6 +2,8 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using DeepForest.Core;
+using DeepForest.Character;
+using DeepForest.Narrative;
 
 namespace DeepForest.Cards;
 
@@ -27,8 +29,25 @@ public partial class Deck : Node
 
         foreach (var card in startingCards)
         {
-            DrawPile.Add((Card)card.Duplicate());
+            Card cardInstance = (Card)card.Duplicate();
+            cardInstance.UsesLeft = cardInstance.MaxUses;
+            DrawPile.Add(cardInstance);
         }
+
+        if (GameState.Instance?.PlayerInstance?.CharacterData?.CharacterId == CharacterId.Nancy)
+        {
+            if (!DrawPile.Exists(c => c.CardId == CardId.KeyRecordingTape))
+            {
+                Card tape = CardFactory.CreateCard(CardId.KeyRecordingTape);
+                if (tape != null) DrawPile.Add(tape);
+            }
+            if (!DrawPile.Exists(c => c.CardId == CardId.KeyShowdown))
+            {
+                Card showdown = CardFactory.CreateCard(CardId.KeyShowdown);
+                if (showdown != null) DrawPile.Add(showdown);
+            }
+        }
+
         Shuffle(DrawPile);
         EmitSignal(SignalName.DeckChanged);
         EmitSignal(SignalName.HandChanged);
@@ -47,13 +66,13 @@ public partial class Deck : Node
         }
     }
 
-    public bool DrawCards(int count)
+    public bool DrawCards(int count, bool ignoreLimit = false)
     {
         int limit = GameState.Instance.PlayerInstance.HandLimit;
         bool triggeredReshuffle = false;
         for (int i = 0; i < count; i++)
         {
-            if (Hand.Count >= limit)
+            if (!ignoreLimit && Hand.Count >= limit)
             {
                 break;
             }
@@ -69,17 +88,44 @@ public partial class Deck : Node
             Card card = DrawPile[0];
             DrawPile.RemoveAt(0);
             
-            // 抽到時立即觸發詛咒效果
+            AddCardToHand(card);
+        }
+        EmitSignal(SignalName.HandChanged);
+        EmitSignal(SignalName.DeckChanged);
+        return triggeredReshuffle;
+    }
+
+    public void AddCardToHand(Card card)
+    {
+        if (card.CardId == CardId.CurseSuffocation)
+        {
+            if (CardQueryHelper.HasCardEquipped(this, CardId.KeyJerryCollar))
+            {
+                SaveManager.UnlockEnding("湯明亮", "成就：好狗狗");
+                StoryUnlock.Instance?.UnlockStorySegment("成就：好狗狗", "在被「窒息」折磨的同時，你選擇戴上了傑利的項圈... 成為一隻乖狗。");
+            }
+
             Hand.Add(card);
-            if (card.CardName == "穢祟附身")
+            GameState.Instance.AddLog("【詛咒】你抽到了【窒息】！感到呼吸極度困難，你被迫丟棄了所有手牌，並重新抽取 1 張牌！");
+            foreach (var c in Hand)
+            {
+                if (!c.HasMeta("temporary"))
+                {
+                    DiscardPile.Add(c);
+                }
+            }
+            Hand.Clear();
+            DrawCards(1);
+        }
+        else
+        {
+            Hand.Add(card);
+            if (card.EffectTags.HasFlag(CardEffectTag.Corruption))
             {
                 GameState.Instance.PlayerInstance.CurrentSanity -= 15;
                 GameState.Instance.AddLog("【詛咒】你抽到了【穢祟附身】！陰冷的低語侵蝕了你的理智（理智 -15）！");
             }
         }
-        EmitSignal(SignalName.HandChanged);
-        EmitSignal(SignalName.DeckChanged);
-        return triggeredReshuffle;
     }
 
     public void DiscardHand()
@@ -94,7 +140,10 @@ public partial class Deck : Node
     {
         if (Hand.Remove(card))
         {
-            DiscardPile.Add(card);
+            if (!card.HasMeta("temporary"))
+            {
+                DiscardPile.Add(card);
+            }
             EmitSignal(SignalName.HandChanged);
             EmitSignal(SignalName.DeckChanged);
         }
@@ -114,9 +163,17 @@ public partial class Deck : Node
         if (Hand.Remove(card))
         {
             EquippedCards.Add(card);
-            
-            Card unequipCard = NewUnequipCard(card);
-            DiscardPile.Add(unequipCard);
+
+            if (card.CardId == CardId.KeyJerryCollar && CardQueryHelper.HasCardAnywhere(this, CardId.CurseSuffocation))
+            {
+                SaveManager.UnlockEnding("湯明亮", "成就：好狗狗");
+                StoryUnlock.Instance?.UnlockStorySegment("成就：好狗狗", "在被「窒息」折磨的同時，你選擇戴上了傑利的項圈... 成為一隻乖狗。");
+            }
+            if (card.CardId != CardId.KeyJerryCollar)
+            {
+                Card unequipCard = NewUnequipCard(card);
+                DiscardPile.Add(unequipCard);
+            }
             
             EmitSignal(SignalName.HandChanged);
             EmitSignal(SignalName.DeckChanged);
@@ -128,7 +185,7 @@ public partial class Deck : Node
         if (EquippedCards.Remove(card))
         {
             RemoveCardFromAllPiles(unequipCard);
-            Hand.Add(card);
+            AddCardToHand(card);
             
             EmitSignal(SignalName.HandChanged);
             EmitSignal(SignalName.DeckChanged);
@@ -165,10 +222,6 @@ public partial class Deck : Node
 
     public bool AddCardToDiscardPile(Card card)
     {
-        if (GetTotalWeight() + card.Weight > GameState.Instance.PlayerInstance.DeckCapacity)
-        {
-            return false;
-        }
         DiscardPile.Add(card);
         EmitSignal(SignalName.DeckChanged);
         return true;

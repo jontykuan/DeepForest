@@ -8,7 +8,6 @@ public partial class SceneData : Resource
     [Export] public string SceneName { get; set; } = "Unnamed Scene";
     [Export(PropertyHint.MultilineText)] public string SceneDescription { get; set; } = "";
     [Export] public Godot.Collections.Array<SceneAction> Actions { get; set; } = new();
-    [Export] public string BackgroundAsciiArtFile { get; set; } = ""; 
 
     // 4 區塊動態合成參數
     [Export] public string BottomGround { get; set; } = "dirt";

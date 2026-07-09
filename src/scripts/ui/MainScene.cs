@@ -7,6 +7,7 @@ using DeepForest.Character;
 using DeepForest.Scene;
 using DeepForest.Rendering;
 using DeepForest.Combat;
+using DeepForest.Cards.Effects;
 
 namespace DeepForest.UI;
 
@@ -17,28 +18,62 @@ public partial class MainScene : Control
 	private Label _systemBannerLabel = null!;
 	private VBoxContainer _actionList = null!;
 	private HBoxContainer _handContainer = null!;
-	private RichTextLabel _avatarLabel = null!;
-	private RichTextLabel _sceneLabel = null!;
+	private TextureRect _avatarTexture = null!;
+	private Control _sceneContainer = null!;
+	private TextureRect _baseTexture = null!;
+	private TextureRect _groundTexture = null!;
+	private TextureRect _leftTerrainTexture = null!;
+	private TextureRect _rightTerrainTexture = null!;
+	private TextureRect _decalLeftTexture = null!;
+	private TextureRect _decalRightTexture = null!;
+	private TextureRect _weatherTexture = null!;
 	private RichTextLabel _itemLabel = null!;
 
 	private SceneRenderer _sceneRenderer = null!;
-	private AvatarRenderer _avatarRenderer = null!;
 	private MapRenderer _mapRenderer = null!;
+
+	private HandUI _handUI = null!;
+	private StatsPanel _statsPanel = null!;
+	private ActionPanel _actionPanel = null!;
+	private MapPanel _mapPanel = null!;
+	private SystemBanner _systemBanner = null!;
+	private SceneEffect2D _sceneEffect = null!;
+
+	private Panel _mainMenuPanel = null!;
+	private SettingsPanelUI _settingsPanel = null!;
 
 	public override void _Ready()
 	{
 		_statsLabel = GetNode<RichTextLabel>("StatsPanel/StatsLabel");
 		_mapLabel = GetNode<RichTextLabel>("MapPanel/MapLabel");
 		_systemBannerLabel = GetNode<Label>("SystemBanner/BannerLabel");
-		_actionList = GetNode<VBoxContainer>("CenterViewport/ActionPanel/ActionList");
+		_actionList = GetNode<VBoxContainer>("CenterViewport/ActionPanel/ActionScroll/ActionList");
 		_handContainer = GetNode<HBoxContainer>("HandUI/HandList");
-		_avatarLabel = GetNode<RichTextLabel>("AvatarPanel/AvatarLabel");
-		_sceneLabel = GetNode<RichTextLabel>("CenterViewport/SceneLabel");
+		_avatarTexture = GetNode<TextureRect>("AvatarPanel/AvatarTexture");
+		
+		_sceneContainer = GetNode<Control>("CenterViewport/SceneContainer");
+		_baseTexture = GetNode<TextureRect>("CenterViewport/SceneContainer/BaseTexture");
+		_groundTexture = GetNode<TextureRect>("CenterViewport/SceneContainer/GroundTexture");
+		_leftTerrainTexture = GetNode<TextureRect>("CenterViewport/SceneContainer/LeftTerrainTexture");
+		_rightTerrainTexture = GetNode<TextureRect>("CenterViewport/SceneContainer/RightTerrainTexture");
+		_decalLeftTexture = GetNode<TextureRect>("CenterViewport/SceneContainer/DecalLeftTexture");
+		_decalRightTexture = GetNode<TextureRect>("CenterViewport/SceneContainer/DecalRightTexture");
+		_weatherTexture = GetNode<TextureRect>("CenterViewport/SceneContainer/WeatherTexture");
 		_itemLabel = GetNode<RichTextLabel>("ItemsPanel/ItemLabel");
 
-		_sceneRenderer = new SceneRenderer(68, 24);
-		_avatarRenderer = new AvatarRenderer(40, 25);
+		_sceneRenderer = new SceneRenderer(136, 48);
 		_mapRenderer = new MapRenderer(30, 12);
+
+		// Initialize wrapper classes
+		_handUI = new HandUI(_handContainer, PlayCard, DiscardCardFromHand);
+		_statsPanel = new StatsPanel(_statsLabel, _itemLabel);
+		_actionPanel = new ActionPanel(_actionList);
+		_mapPanel = new MapPanel(_mapLabel);
+		_systemBanner = new SystemBanner(_systemBannerLabel);
+
+		_sceneEffect = new SceneEffect2D();
+		AddChild(_sceneEffect);
+		_sceneEffect.Initialize(_sceneContainer);
 
 		GameState.Instance.LogAdded += OnLogAdded;
 		GameState.Instance.PlayerInstance.StatChanged += OnPlayerStatChanged;
@@ -48,51 +83,16 @@ public partial class MainScene : Control
 		GameState.Instance.DepthChanged += (depth) => UpdateSystemBanner();
 		GameState.Instance.EndingManagerInstance.EndingTriggered += OnEndingTriggered;
 
-		var characterRes = GD.Load<CharacterData>("res://src/resources/characters/character_default_male.tres");
-		var player = GameState.Instance.PlayerInstance;
-		player.InitializeFromData(characterRes);
+		// Disable mouse-draggable resizing dynamically
+		DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.ResizeDisabled, true);
 
-		var startingCards = new List<Card>(characterRes.StartingDeck);
-		GameState.Instance.DeckInstance.Initialize(startingCards);
+		// Apply settings values from persistent save on boot
+		SaveManager.ApplySettings();
 
-		UpdateHUD();
-		UpdateMap();
-		UpdateSystemBanner();
-		UpdateActionsList();
-		UpdateSceneAndAvatar();
-		
-		TurnManager.Instance.StartTurn();
-		
-		GameState.Instance.AddLog("你醒了過來。四周是一片未知的、死寂的森林。");
-	}
-
-	private Card CreateActionCard(string name, CardType type, int weight, int str, int dex, int wis, int hungerCost, int thirstCost)
-	{
-		var card = new Card();
-		card.CardName = name;
-		card.CardType = type;
-		card.Weight = weight;
-		card.StrValue = str;
-		card.DexValue = dex;
-		card.WisValue = wis;
-		card.HungerCost = hungerCost;
-		card.ThirstCost = thirstCost;
-		card.Description = $"進行 {name}。";
-		return card;
-	}
-
-	private Card CreateConsumableCard(string name, int hungerRestore, int thirstRestore, int hpRestore, int sanityRestore)
-	{
-		var card = new Card();
-		card.CardName = name;
-		card.CardType = CardType.Consumable;
-		card.Weight = 1;
-		card.HungerCost = -hungerRestore;  
-		card.ThirstCost = -thirstRestore;
-		card.HpCost = -hpRestore;
-		card.SanityCost = -sanityRestore;
-		card.Description = $"使用 {name}。回復飢餓 {hungerRestore}，口渴 {thirstRestore}。";
-		return card;
+		// Show Title Screen backdrop and Main Menu Overlay
+		SetGameplayUiVisible(false);
+		ShowTitleBackdrop();
+		CreateMainMenu();
 	}
 
 	private void OnLogAdded(string message)
@@ -109,33 +109,7 @@ public partial class MainScene : Control
 
 	private void OnHandChanged()
 	{
-		foreach (Node child in _handContainer.GetChildren())
-		{
-			child.QueueFree();
-		}
-
-		var deck = GameState.Instance.DeckInstance;
-		for (int i = 0; i < deck.Hand.Count; i++)
-		{
-			Card card = deck.Hand[i];
-			Button cardButton = new Button();
-			cardButton.Text = $"[{card.CardName}]\nCost:H{card.HungerCost}/T{card.ThirstCost}\nSTR:{card.StrValue}/DEX:{card.DexValue}/WIS:{card.WisValue}";
-			cardButton.CustomMinimumSize = new Vector2(120, 100);
-			
-			int index = i;
-			cardButton.Pressed += () => PlayCard(index);
-			
-			if (StatusEffect.HasBrokenFinger(deck.Hand))
-			{
-				if (i == 0 || i == deck.Hand.Count - 1)
-				{
-					cardButton.Disabled = true;
-					cardButton.Modulate = new Color(0.33f, 0.42f, 0.18f); 
-				}
-			}
-
-			_handContainer.AddChild(cardButton);
-		}
+		_handUI.UpdateHand(GameState.Instance.DeckInstance);
 	}
 
 	private void OnDeckChanged()
@@ -145,34 +119,7 @@ public partial class MainScene : Control
 
 	private void UpdateHUD()
 	{
-		Player player = GameState.Instance.PlayerInstance;
-		Deck deck = GameState.Instance.DeckInstance;
-
-		string hpBar = new string('█', player.CurrentHp / 10) + new string('░', (player.MaxHp - player.CurrentHp) / 10);
-		string sanBar = new string('█', player.CurrentSanity / 10) + new string('░', (player.MaxSanity - player.CurrentSanity) / 10);
-		string hungerBar = new string('█', player.CurrentHunger / 5) + new string('░', (player.MaxHunger - player.CurrentHunger) / 5);
-		string thirstBar = new string('█', player.CurrentThirst / 5) + new string('░', (player.MaxThirst - player.CurrentThirst) / 5);
-
-		_statsLabel.Text = $"[ 狀態面板 ]\n\n" +
-						   $"體力: {player.CurrentHp}/{player.MaxHp}\n{hpBar}\n" +
-						   $"理智: {player.CurrentSanity}/{player.MaxSanity}\n{sanBar}\n" +
-						   $"飢餓: {player.CurrentHunger}/{player.MaxHunger}\n{hungerBar}\n" +
-						   $"口渴: {player.CurrentThirst}/{player.MaxThirst}\n{thirstBar}\n\n" +
-						   $"[ 背包負重 ]\n" +
-						   $"卡牌重: {deck.GetTotalWeight()}/{player.DeckCapacity}\n" +
-						   $"手牌: {deck.Hand.Count} | 庫: {deck.DrawPile.Count} | 棄: {deck.DiscardPile.Count}";
-
-		string itemsText = "[ 重要物品 & 裝備 ]\n\n";
-		foreach (var eq in deck.EquippedCards)
-		{
-			itemsText += $"[裝備] {eq.CardName}\n";
-		}
-		foreach (var c in deck.Hand)
-		{
-			if (c.CardType == CardType.KeyItem)
-				itemsText += $"[物品] {c.CardName}\n";
-		}
-		_itemLabel.Text = itemsText;
+		_statsPanel.UpdateHUD(GameState.Instance.PlayerInstance, GameState.Instance.DeckInstance);
 	}
 
 	private void UpdateSceneAndAvatar()
@@ -208,199 +155,254 @@ public partial class MainScene : Control
 			subs.Add("tent");
 		}
 
-		bool hasTorch = GameState.Instance.DeckInstance.EquippedCards.Exists(c => c.CardName == "火把") || 
-						 GameState.Instance.DeckInstance.Hand.Exists(c => c.CardName == "火把");
+		bool hasTorch = GameState.Instance.DeckInstance.EquippedCards.Exists(c => c.CardId == CardId.EquipmentTorch) || 
+						 GameState.Instance.DeckInstance.Hand.Exists(c => c.CardId == CardId.EquipmentTorch);
 
-		var sceneGrid = _sceneRenderer.RenderScene(activeScene, weather, subs, GameState.Instance.IsIndoor, GameState.Instance.IndoorDepth, hasTorch);
+		Texture2D LoadSceneTexture(string path)
+		{
+			if (string.IsNullOrEmpty(path) || !Godot.FileAccess.FileExists(path))
+				return null!;
+			return GD.Load<Texture2D>(path);
+		}
 
-		string avatarName = "default_male";
-		string expression = "normal";
-		if (player.CurrentHp < 30) expression = "pain";
-		else if (player.CurrentSanity < 30) expression = "insane";
+		// 1. Set base perspective
+		_baseTexture.Texture = LoadSceneTexture("res://assets/ascii_art/scenes/perspective_template.png");
 
-		var avatarGrid = _avatarRenderer.RenderAvatar(avatarName, expression, player.CurrentHp, player.CurrentSanity);
+		// 2. Set ground
+		int nodeId = MapManager.Instance.CurrentNodeId;
+		string groundVar = (nodeId % 3 == 1) ? "_2" : "";
+		string groundPath = $"res://assets/ascii_art/scenes/ground_{activeScene.BottomGround}{groundVar}.png";
+		if (groundVar != "" && !Godot.FileAccess.FileExists(groundPath))
+		{
+			groundPath = $"res://assets/ascii_art/scenes/ground_{activeScene.BottomGround}.png";
+		}
+		_groundTexture.Texture = LoadSceneTexture(groundPath);
 
+		// 3. Set left/right terrains
 		bool leftBlind = StatusEffect.HasLeftEyeBlindness(GameState.Instance.DeckInstance.Hand);
 		bool rightBlind = StatusEffect.HasRightEyeBlindness(GameState.Instance.DeckInstance.Hand);
 
-		EffectRenderer.ApplyEffects(sceneGrid, player.CurrentHp, player.CurrentSanity, player.Corruption, leftBlind, rightBlind);
-		EffectRenderer.ApplyEffects(avatarGrid, player.CurrentHp, player.CurrentSanity, player.Corruption, leftBlind, rightBlind);
+		string leftVar = (nodeId % 2 == 1) ? "_2" : "";
+		string leftPath = $"res://assets/ascii_art/scenes/terrain_{activeScene.LeftTerrain}_left{leftVar}.png";
+		if (leftVar != "" && !Godot.FileAccess.FileExists(leftPath))
+		{
+			leftPath = $"res://assets/ascii_art/scenes/terrain_{activeScene.LeftTerrain}_left.png";
+		}
+		_leftTerrainTexture.Texture = LoadSceneTexture(leftPath);
+		_leftTerrainTexture.Visible = !leftBlind;
 
-		_sceneLabel.Text = sceneGrid.ToBBCode();
-		_avatarLabel.Text = avatarGrid.ToBBCode();
+		string rightVar = (((nodeId + 1) % 2) == 1) ? "_2" : "";
+		string rightPath = $"res://assets/ascii_art/scenes/terrain_{activeScene.RightTerrain}_right{rightVar}.png";
+		if (rightVar != "" && !Godot.FileAccess.FileExists(rightPath))
+		{
+			rightPath = $"res://assets/ascii_art/scenes/terrain_{activeScene.RightTerrain}_right.png";
+		}
+		_rightTerrainTexture.Texture = LoadSceneTexture(rightPath);
+		_rightTerrainTexture.Visible = !rightBlind;
+
+		// 4. Set Decals
+		string decalLeftPath = "";
+		string decalRightPath = "";
+		foreach (var decal in activeScene.Decals)
+		{
+			if (decal.EndsWith("left") || decal.Contains("left"))
+				decalLeftPath = $"res://assets/ascii_art/scenes/decal_{decal}.png";
+			else if (decal.EndsWith("right") || decal.Contains("right"))
+				decalRightPath = $"res://assets/ascii_art/scenes/decal_{decal}.png";
+			else
+			{
+				if (decalLeftPath == "") decalLeftPath = $"res://assets/ascii_art/scenes/decal_{decal}.png";
+				else decalRightPath = $"res://assets/ascii_art/scenes/decal_{decal}.png";
+			}
+		}
+		_decalLeftTexture.Texture = LoadSceneTexture(decalLeftPath);
+		_decalRightTexture.Texture = LoadSceneTexture(decalRightPath);
+
+		// 5. Set Weather
+		string weatherPath = "";
+		if (weather == "濃霧" || weather == "Fog")
+			weatherPath = "res://assets/ascii_art/scenes/weather_fog.png";
+		else if (weather == "暴雨" || weather == "Rain" || weather == "雷暴")
+			weatherPath = "res://assets/ascii_art/scenes/weather_rain.png";
+		_weatherTexture.Texture = LoadSceneTexture(weatherPath);
+
+		// 6. Set Indoor brightness/shading modulation
+		if (GameState.Instance.IsIndoor && !hasTorch)
+		{
+			float factor = Math.Max(0.05f, 1.0f - (GameState.Instance.IndoorDepth * 0.25f));
+			_sceneContainer.SelfModulate = new Color(factor, factor, factor);
+		}
+		else
+		{
+			_sceneContainer.SelfModulate = new Color(1.0f, 1.0f, 1.0f);
+		}
+
+		// 7. Load and display avatar
+		string avatarName = "default_male";
+		string expression = "base";
+		if (player.CurrentHp < 30) expression = "pain";
+		else if (player.CurrentSanity < 30) expression = "insane";
+
+		string texturePath = $"res://assets/ascii_art/avatars/{avatarName}/{expression}.png";
+		if (!Godot.FileAccess.FileExists(texturePath))
+		{
+			texturePath = $"res://assets/ascii_art/avatars/{avatarName}/base.png";
+		}
+		
+		if (Godot.FileAccess.FileExists(texturePath))
+		{
+			_avatarTexture.Texture = GD.Load<Texture2D>(texturePath);
+		}
+
+		if (player.CurrentHp < 30 || expression == "pain")
+		{
+			_avatarTexture.SelfModulate = new Color(1.0f, 0.4f, 0.4f);
+		}
+		else if (player.CurrentSanity < 30 || expression == "insane")
+		{
+			_avatarTexture.SelfModulate = new Color(0.7f, 0.3f, 0.8f);
+		}
+		else
+		{
+			_avatarTexture.SelfModulate = new Color(1.0f, 1.0f, 1.0f);
+		}
 	}
 
 	private void UpdateMap()
 	{
-		var mapManager = MapManager.Instance;
-		var mapGrid = _mapRenderer.RenderMap(mapManager.CurrentNodeId, mapManager.ExploredNodeIds);
-		_mapLabel.Text = mapGrid.ToBBCode();
+		_mapPanel.UpdateMap(_mapRenderer, MapManager.Instance.CurrentNodeId, MapManager.Instance.ExploredNodeIds);
 	}
 
 	private void UpdateSystemBanner(string customLog = "")
 	{
-		var env = EnvironmentSystem.Instance;
-		string bannerText = $"第 {GameState.Instance.CurrentDay} 天 │ 森林深度: {GameState.Instance.CurrentDepth}";
-		if (env != null)
-		{
-			float tempF = env.CurrentTempCelsius * 9f / 5f + 32f;
-			bannerText += $"|天氣：{env.GetWeatherString()}|溫度：{env.CurrentTempCelsius:F1}°C/{tempF:F1}°F|濕度：{env.CurrentHumidityPercent:F0}%";
-		}
-
-		if (!string.IsNullOrEmpty(customLog))
-		{
-			bannerText += $"\n> {customLog}";
-		}
-		else if (GameState.Instance.GameLogs.Count > 0)
-		{
-			bannerText += $"\n> {GameState.Instance.GameLogs[GameState.Instance.GameLogs.Count - 1]}";
-		}
-		
-		_systemBannerLabel.Text = bannerText;
+		_systemBanner.UpdateSystemBanner(customLog);
 	}
 
 	private void UpdateActionsList()
 	{
-		foreach (Node child in _actionList.GetChildren())
-		{
-			child.QueueFree();
-		}
-
-		var mapNode = MapManager.Instance.Nodes[MapManager.Instance.CurrentNodeId];
-		var sceneData = mapNode.SceneData;
-
-		string sceneName = sceneData.SceneName;
-		string sceneDescription = sceneData.SceneDescription;
-		List<SceneAction> activeActions = new List<SceneAction>();
-
-		if (GameState.Instance.IsInCombat && GameState.Instance.CurrentEnemy != null)
-		{
-			var enemy = GameState.Instance.CurrentEnemy;
-			string hpStr = enemy.HideHp ? "???/???" : $"{GameState.Instance.CurrentEnemyHp}/{enemy.MaxHp}";
-			sceneName = $"【戰鬥】{enemy.EnemyName}";
-			sceneDescription = $"一隻【{enemy.EnemyName}】阻擋了你！請從手牌打出屬性卡放入對決區，點擊下方對決進行比拼。";
-
-			if (GameState.Instance.CombatPlayedCards.Count > 0)
-			{
-				string playedCardsStr = "\n\n【已投入對決區的卡牌】：";
-				foreach (var c in GameState.Instance.CombatPlayedCards)
-				{
-					playedCardsStr += $"[{c.CardName}] ";
-				}
-				sceneDescription += playedCardsStr;
-			}
-			else
-			{
-				sceneDescription += "\n\n【對決區】：目前空無一物。請打出屬性卡進行比拼。";
-			}
-
-			activeActions.Add(new SceneAction { 
-				ActionName = $"揭露結果 ({enemy.EnemyName} {hpStr})", 
-				ThresholdType = ThresholdType.None, 
-				ThresholdValue = 0, 
-				EffectType = ActionEffectType.CombatClash 
-			});
-
-			int fleeDex = enemy.IsAggressive ? 5 : 2;
-			activeActions.Add(new SceneAction {
-				ActionName = "逃跑並前進",
-				ThresholdType = ThresholdType.Dex,
-				ThresholdValue = fleeDex,
-				EffectType = ActionEffectType.MoveForward
-			});
-		}
-		else
-		{
-			activeActions.AddRange(sceneData.Actions);
-		}
-
-		Label descLabel = new Label();
-		descLabel.Text = $"{sceneName}\n{sceneDescription}\n\n[ 可執行行動 ]：";
-		_actionList.AddChild(descLabel);
-
-		foreach (var action in activeActions)
-		{
-			HBoxContainer row = new HBoxContainer();
-			Button actionButton = new Button();
-			actionButton.Text = GetActionLabelText(action);
-			
-			bool available = IsActionAvailable(action, out string state);
-			
-			if (state == "Available")
-			{
-				actionButton.Modulate = new Color(0.22f, 1.0f, 0.08f); 
-			}
-			else if (state == "InsufficientPoints")
-			{
-				actionButton.Modulate = new Color(0.33f, 0.42f, 0.18f); 
-				actionButton.Disabled = true;
-			}
-			else 
-			{
-				actionButton.Modulate = new Color(1.0f, 0.13f, 0.13f); 
-				actionButton.Disabled = true;
-			}
-
-			actionButton.Pressed += () => ExecuteAction(action);
-			row.AddChild(actionButton);
-			_actionList.AddChild(row);
-		}
+		_actionPanel.UpdateActions(ExecuteAction);
 	}
 
-	private string GetActionLabelText(SceneAction action)
+	private async void PlayCard(int handIndex)
 	{
-		string prefix = action.ThresholdType switch
-		{
-			ThresholdType.Str => $"[力量 {TurnManager.Instance.AccumulatedStr}/{action.ThresholdValue}]",
-			ThresholdType.Dex => $"[靈巧 {TurnManager.Instance.AccumulatedDex}/{action.ThresholdValue}]",
-			ThresholdType.Wis => $"[智慧 {TurnManager.Instance.AccumulatedWis}/{action.ThresholdValue}]",
-			ThresholdType.Any => $"[行動 {TurnManager.Instance.AccumulatedStr + TurnManager.Instance.AccumulatedDex + TurnManager.Instance.AccumulatedWis}/{action.ThresholdValue}]",
-			_ => ""
-		};
+		Deck deck = GameState.Instance.DeckInstance;
+		Player player = GameState.Instance.PlayerInstance;
 
-		if (!string.IsNullOrEmpty(action.RequiredItem))
+		if (handIndex < 0 || handIndex >= deck.Hand.Count) return;
+
+		if (GameState.Instance.CurrentInteractionState == GameState.InteractionState.PlanningDiscard)
 		{
-			prefix += $"[需要: {action.RequiredItem}]";
+			Card selected = deck.Hand[handIndex];
+			deck.DiscardCard(selected);
+			GameState.Instance.AddLog($"【規劃階段一】你選擇棄置了【{selected.CardName}】。");
+			
+			GameState.Instance.CurrentInteractionState = GameState.InteractionState.PlanningPutBack;
+			GameState.Instance.AddLog("【規劃階段二】現在請選擇 1 張手牌放回牌庫頂。");
+			
+			UpdateHUD();
+			UpdateActionsList();
+			UpdateSceneAndAvatar();
+			OnHandChanged();
+			return;
+		}
+		else if (GameState.Instance.CurrentInteractionState == GameState.InteractionState.PlanningPutBack)
+		{
+			Card selected = deck.Hand[handIndex];
+			deck.Hand.RemoveAt(handIndex);
+			deck.DrawPile.Insert(0, selected);
+			deck.EmitSignal(Deck.SignalName.HandChanged);
+			deck.EmitSignal(Deck.SignalName.DeckChanged);
+			
+			GameState.Instance.AddLog($"【規劃階段二】你將【{selected.CardName}】放回了牌庫頂。規劃完成！");
+			GameState.Instance.CurrentInteractionState = GameState.InteractionState.Normal;
+			
+			UpdateHUD();
+			UpdateActionsList();
+			UpdateSceneAndAvatar();
+			OnHandChanged();
+			return;
 		}
 
-		if (action.EffectType == ActionEffectType.LootCorpse)
+		foreach (var child in _handContainer.GetChildren())
 		{
-			prefix += "[理智 -1]";
+			if (child is Button btn) btn.Disabled = true;
 		}
 
-		return $"{prefix} ▶ {action.ActionName}";
+		Card card = deck.Hand[handIndex];
+		Button cardButton = (Button)_handContainer.GetChild(handIndex);
+		
+		var tween = cardButton.CreateTween();
+		cardButton.PivotOffset = new Vector2(60, 50);
+		tween.Parallel().TweenProperty(cardButton, "modulate:a", 0f, 0.35f);
+		tween.Parallel().TweenProperty(cardButton, "position:y", cardButton.Position.Y - 40, 0.35f);
+		
+		await ToSignal(tween, "finished");
+
+		var result = CardPlayHandler.TryPlayCard(card, player, deck, out string message);
+		if (result != CardPlayHandler.PlayResult.InvalidCard)
+		{
+			GameState.Instance.AddLog(message);
+		}
+
+		if (deck.Hand.Count == 0)
+		{
+			GameState.Instance.AddLog("手牌已用盡，重整思緒重新抽牌。");
+			bool reshuffled = deck.DrawCards(player.Draw);
+			if (reshuffled)
+			{
+				TurnManager.Instance.TriggerDayChange();
+			}
+		}
+
+		UpdateHUD();
+		UpdateActionsList();
+		UpdateSceneAndAvatar();
+		OnHandChanged();
 	}
 
-	private bool IsActionAvailable(SceneAction action, out string state)
+	private async void DiscardCardFromHand(int handIndex)
 	{
-		if (action.EffectType == ActionEffectType.LootCorpse)
+		Deck deck = GameState.Instance.DeckInstance;
+		if (handIndex < 0 || handIndex >= deck.Hand.Count) return;
+
+		foreach (var child in _handContainer.GetChildren())
 		{
-			if (GameState.Instance.PlayerInstance.CurrentSanity < 1)
+			if (child is Button btn) btn.Disabled = true;
+		}
+
+		Card card = deck.Hand[handIndex];
+		Button cardButton = (Button)_handContainer.GetChild(handIndex);
+
+		var tween = cardButton.CreateTween();
+		cardButton.PivotOffset = new Vector2(60, 50);
+		tween.Parallel().TweenProperty(cardButton, "modulate:a", 0f, 0.35f);
+		tween.Parallel().TweenProperty(cardButton, "position:y", cardButton.Position.Y + 40, 0.35f);
+
+		await ToSignal(tween, "finished");
+
+		deck.DiscardCard(card);
+		GameState.Instance.AddLog($"棄置手牌: {card.CardName}");
+
+		if (deck.Hand.Count == 0)
+		{
+			GameState.Instance.AddLog("手牌已用盡，重整思緒重新抽牌。");
+			bool reshuffled = deck.DrawCards(GameState.Instance.PlayerInstance.Draw);
+			if (reshuffled)
 			{
-				state = "InsufficientPoints";
-				return false;
+				TurnManager.Instance.TriggerDayChange();
 			}
 		}
 
-		if (!string.IsNullOrEmpty(action.RequiredItem))
-		{
-			bool hasItem = false;
-			var deck = GameState.Instance.DeckInstance;
-			foreach (var card in deck.EquippedCards)
-			{
-				if (card.CardName == action.RequiredItem) hasItem = true;
-			}
-			foreach (var card in deck.Hand)
-			{
-				if (card.CardName == action.RequiredItem) hasItem = true;
-			}
-			
-			if (!hasItem)
-			{
-				state = "ConditionsMissing";
-				return false;
-			}
-		}
+		UpdateHUD();
+		UpdateActionsList();
+		UpdateSceneAndAvatar();
+		OnHandChanged();
+	}
+
+	private void ExecuteAction(SceneAction action)
+	{
+		Deck deck = GameState.Instance.DeckInstance;
+		Player player = GameState.Instance.PlayerInstance;
 
 		int currentVal = action.ThresholdType switch
 		{
@@ -412,433 +414,57 @@ public partial class MainScene : Control
 		};
 
 		int req = action.ThresholdValue;
-		if (action.ThresholdType == ThresholdType.Dex && EnvironmentSystem.Instance != null)
+		if (action.ThresholdType == ThresholdType.Dex)
 		{
-			req += EnvironmentSystem.Instance.GetDexThresholdModifier();
-		}
-
-		if (currentVal >= req)
-		{
-			state = "Available";
-			return true;
-		}
-		else
-		{
-			state = "InsufficientPoints";
-			return false;
-		}
-	}
-
-	private void PlayCard(int handIndex)
-	{
-		Deck deck = GameState.Instance.DeckInstance;
-		Player player = GameState.Instance.PlayerInstance;
-
-		if (handIndex < 0 || handIndex >= deck.Hand.Count) return;
-
-		Card card = deck.Hand[handIndex];
-
-		// 1. 傷勢卡無法主動打出
-		if (card.CardType == CardType.Injury)
-		{
-			GameState.Instance.AddLog("【傷勢】這是傷勢卡，你無法主動打出它！");
-			return;
-		}
-
-		// 2. 詛咒卡「穢祟附身」淨化邏輯
-		if (card.CardName == "穢祟附身")
-		{
-			if (player.CurrentSanity < 15)
+			if (EnvironmentSystem.Instance != null)
 			{
-				GameState.Instance.AddLog("【詛咒】你的理智不足 15，無法驅除此詛咒！");
-				return;
+				req += EnvironmentSystem.Instance.GetDexThresholdModifier();
 			}
-			player.CurrentSanity -= 15;
-			deck.Hand.Remove(card); // 永久從牌組銷毀
-			GameState.Instance.AddLog("你忍受著劇烈精神痛苦，消耗了 15 點理智，永久驅散了【穢祟附身】！");
-			UpdateHUD();
-			UpdateActionsList();
-			UpdateSceneAndAvatar();
-			return;
+			if (CardQueryHelper.HasCardEquipped(deck, CardId.EquipmentFlashlight))
+			{
+				req = Math.Max(0, req - 1);
+			}
 		}
 
-		if (GameState.Instance.IsInCombat)
+		if (currentVal < req)
 		{
-			if (card.CardType == CardType.ActionStr || card.CardType == CardType.ActionDex || card.CardType == CardType.ActionWis)
+			var forceCard = CardQueryHelper.FindCardAnywhere(deck, CardId.ActionForce);
+			if (forceCard != null)
 			{
-				CombatManager.Instance.AddCardToCombatZone(card);
+				int missing = req - currentVal;
+				player.CurrentHp -= missing * 2;
+				deck.Hand.Remove(forceCard); 
+				GameState.Instance.AddLog($"【強行】由於你使用了【強行】卡，你付出了 {missing * 2} 點體力代價補足了 {missing} 點點數缺口，強行通過門檻！");
 				UpdateHUD();
-				UpdateActionsList();
-				UpdateSceneAndAvatar();
-				return;
 			}
 		}
 
-		int thirstCost = card.ThirstCost;
-		if (card.CardType != CardType.Consumable && thirstCost > 0 && EnvironmentSystem.Instance != null)
+		var context = new ActionContext {
+			GameState = GameState.Instance,
+			Player = GameState.Instance.PlayerInstance!,
+			Deck = GameState.Instance.DeckInstance!,
+			MapManager = MapManager.Instance!,
+			TurnManager = TurnManager.Instance!,
+			Environment = EnvironmentSystem.Instance!,
+			SourceAction = action,
+			CurrentScene = (GameState.Instance.IsIndoor ? MapManager.Instance.CurrentIndoorScene : null) ?? MapManager.Instance.Nodes[MapManager.Instance.CurrentNodeId].SceneData
+		};
+
+		var result = ActionResolver.Instance.Resolve(action, context);
+		if (result.Success)
 		{
-			thirstCost += EnvironmentSystem.Instance.GetThirstCostModifier();
+			GameState.Instance.AddLog(result.LogMessage);
 		}
 
-		// 3. 檢查是否為「卸載裝備卡」
-		if (card.HasMeta("parent_card"))
+		if (action.EffectType == ActionEffectType.MoveForward)
 		{
-			Card parentCard = (Card)card.GetMeta("parent_card");
-			if (player.CurrentHunger < card.HungerCost || player.CurrentThirst < thirstCost ||
-				player.CurrentHp < card.HpCost || player.CurrentSanity < card.SanityCost)
-			{
-				GameState.Instance.AddLog("點數不足，無法打出此卡牌！");
-				return;
-			}
-
-			player.CurrentHunger -= card.HungerCost;
-			player.CurrentThirst -= thirstCost;
-			player.CurrentHp -= card.HpCost;
-			player.CurrentSanity -= card.SanityCost;
-
-			deck.UnequipCard(parentCard, card);
-			GameState.Instance.AddLog($"卸下了裝備【{parentCard.CardName}】。原卡已回到手牌，卸載卡已銷毀。");
-
-			UpdateHUD();
-			UpdateActionsList();
-			UpdateSceneAndAvatar();
-			return;
+			_sceneEffect.StepForward();
 		}
-
-		if (player.CurrentHunger < card.HungerCost || player.CurrentThirst < thirstCost ||
-			player.CurrentHp < card.HpCost || player.CurrentSanity < card.SanityCost)
+		else if (action.EffectType == ActionEffectType.CombatClash || 
+				 action.EffectType == ActionEffectType.WitchRitual || 
+				 action.EffectType == ActionEffectType.EnterCave)
 		{
-			GameState.Instance.AddLog("點數不足，無法打出此卡牌！");
-			return;
-		}
-
-		player.CurrentHunger -= card.HungerCost;
-		player.CurrentThirst -= thirstCost;
-		player.CurrentHp -= card.HpCost;
-		player.CurrentSanity -= card.SanityCost;
-
-		int str = card.StrValue;
-		if (str > 0)
-		{
-			if (StatusEffect.HasBrokenArm(deck.Hand))
-			{
-				str = Math.Max(1, str / 2); 
-			}
-			int fractureCount = StatusEffect.GetFractureCount(deck.Hand);
-			if (fractureCount > 0)
-			{
-				str = Math.Max(1, str >> fractureCount);
-			}
-		}
-
-		if (card.CardType == CardType.ActionStr || card.CardType == CardType.ActionDex || card.CardType == CardType.ActionWis)
-		{
-			TurnManager.Instance.AccumulatedStr += str;
-			TurnManager.Instance.AccumulatedDex += card.DexValue;
-			TurnManager.Instance.AccumulatedWis += card.WisValue;
-		}
-
-		if (card.CardType == CardType.Equipment)
-		{
-			deck.EquipCard(card);
-			GameState.Instance.AddLog($"裝備了 {card.CardName}。已從手牌移出，卸載卡已加入棄牌堆。");
-		}
-		else if (card.CardType == CardType.Consumable)
-		{
-			deck.Hand.Remove(card); // 永久消耗
-			GameState.Instance.AddLog($"使用了消耗品【{card.CardName}】。");
-		}
-		else
-		{
-			deck.DiscardCard(card);
-			GameState.Instance.AddLog($"打出了 {card.CardName}。力量+{str}，靈巧+{card.DexValue}，智慧+{card.WisValue}。");
-		}
-
-		UpdateHUD();
-		UpdateActionsList();
-		UpdateSceneAndAvatar();
-	}
-
-	private void ExecuteAction(SceneAction action)
-	{
-		Player player = GameState.Instance.PlayerInstance;
-		player.CurrentHp -= action.HpCostOnComplete;
-		GameState.Instance.AddLog($"執行了【{action.ActionName}】，消耗 {action.HpCostOnComplete} 點體力。");
-
-		switch (action.EffectType)
-		{
-			case ActionEffectType.Camp:
-				TurnManager.Instance.TriggerDayChange();
-				break;
-			case ActionEffectType.Fish:
-				{
-					var fish = CreateConsumableCard("生魚", 5, -1, 2, -2); 
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(fish))
-					{
-						GameState.Instance.AddLog("捕獲了生魚，放入背包。");
-					}
-					else
-					{
-						GameState.Instance.AddLog("【過重】你的背包負重不足以容納【生魚】，只好將其棄置！");
-					}
-				}
-				break;
-			case ActionEffectType.CollectWater:
-				{
-					var water = CreateConsumableCard("清水", 0, 8, 0, 0);
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(water))
-					{
-						GameState.Instance.AddLog("用水瓶裝滿了清水，放入背包。");
-					}
-					else
-					{
-						GameState.Instance.AddLog("【過重】你的背包負重不足以容納【清水】，只好將其倒掉！");
-					}
-				}
-				break;
-			case ActionEffectType.PryCellar:
-				{
-					GameState.Instance.PlayerInstance.Corruption += 5;
-					var specialLoot = new Card { CardName = "帶血的日記", CardType = CardType.KeyItem, Weight = 1, Description = "地窖裡發現的帶血日記。" };
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(specialLoot))
-					{
-						GameState.Instance.AddLog("你撬開了地窖，陰冷的穢祟之氣撲面而來...你獲得了【帶血的日記】，放入背包並深入了地窖！");
-					}
-					else
-					{
-						GameState.Instance.AddLog("你撬開了地窖，陰冷的氣息撲面而來...但背包裝壓不下【帶血的日記】，你只能空手深入地窖！");
-					}
-
-					// 進入室內狀態
-					GameState.Instance.IsIndoor = true;
-					GameState.Instance.IndoorDepth = 1;
-					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
-					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
-				}
-				break;
-			case ActionEffectType.ExploreIndoor:
-				GameState.Instance.IndoorDepth++;
-				MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(GameState.Instance.IndoorDepth);
-				GameState.Instance.AddLog($"你進一步深入，環境變得更加漆黑 (深度 {GameState.Instance.IndoorDepth})。");
-				break;
-			case ActionEffectType.ReturnOutdoor:
-				GameState.Instance.IsIndoor = false;
-				GameState.Instance.IndoorDepth = 0;
-				MapManager.Instance.CurrentIndoorScene = null;
-				GameState.Instance.AddLog("你沿著來時的路，退回到了地表的室外環境。");
-				break;
-			case ActionEffectType.LeaveIndoor:
-				GameState.Instance.IsIndoor = false;
-				int steps = GameState.Instance.IndoorDepth / 2 + 1;
-				int nextNodeId = MapManager.Instance.GetRandomDownstreamNode(GameState.Instance.EntranceNodeId, steps);
-				MapManager.Instance.CurrentNodeId = nextNodeId;
-				MapManager.Instance.CurrentIndoorScene = null;
-				GameState.Instance.AddLog($"你攀爬走出，重見天日！空間縮減讓你前進了 {steps} 個關卡。");
-				break;
-			case ActionEffectType.Search:
-				{
-					var items = new string[] { "地圖殘片", "生鏽的鑰匙", "帶血的日記" };
-					string chosenItem = items[new Random().Next(items.Length)];
-					var keyItem = new Card { CardName = chosenItem, CardType = CardType.KeyItem, Weight = 1, Description = $"重要的線索：{chosenItem}。" };
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(keyItem))
-					{
-						GameState.Instance.AddLog($"找到了【{chosenItem}】，放入背包。");
-					}
-					else
-					{
-						GameState.Instance.AddLog($"【過重】你的背包負重不足以容納【{chosenItem}】，你只能無奈將其丟棄！");
-					}
-				}
-				break;
-			case ActionEffectType.MoveForward:
-				if (GameState.Instance.IsInCombat)
-				{
-					GameState.Instance.IsInCombat = false;
-					GameState.Instance.CurrentEnemy = null;
-					GameState.Instance.CombatPlayedCards.Clear();
-					GameState.Instance.AddLog("你成功逃離了戰鬥！");
-				}
-
-				GameState.Instance.CurrentDepth += 10;
-				
-				var mapManager = MapManager.Instance;
-				var current = mapManager.Nodes[mapManager.CurrentNodeId];
-				if (current.Connections.Count > 0)
-				{
-					// 若有分歧路徑，隨機選一條（或取第一條）
-					int nextId = current.Connections[new Random().Next(current.Connections.Count)];
-					mapManager.CurrentNodeId = nextId;
-					GameState.Instance.AddLog($"前進到了：{mapManager.Nodes[nextId].Name}。");
-				}
-				else
-				{
-					GameState.Instance.AddLog("你安全地走出了森林！");
-				}
-				break;
-			case ActionEffectType.CombatClash:
-				CombatManager.Instance.ResolveClash();
-				break;
-			case ActionEffectType.LootCorpse:
-				{
-					if (GameState.Instance.PlayerInstance.CurrentSanity < 1)
-					{
-						GameState.Instance.AddLog("你的理智過低，無法搜刮屍體！");
-						break;
-					}
-					GameState.Instance.PlayerInstance.CurrentSanity -= 1;
-
-					var lastEnemy = CombatManager.Instance.LastDefeatedEnemy;
-					if (lastEnemy != null && lastEnemy.LootTable.Count > 0)
-					{
-						foreach (var loot in lastEnemy.LootTable)
-						{
-							if (GameState.Instance.DeckInstance.AddCardToDiscardPile(loot))
-							{
-								GameState.Instance.AddLog($"你消耗了 1 點理智，從屍體上搜刮到了：【{loot.CardName}】，放入背包。");
-							}
-							else
-							{
-								GameState.Instance.AddLog($"【過重】背包過重，無法容納【{loot.CardName}】，你將其遺留在屍體上！");
-							}
-						}
-					}
-					else
-					{
-						GameState.Instance.AddLog("屍體上沒有任何有價值的物品。");
-					}
-					RemoveActionFromCurrentScene("搜屍");
-				}
-				break;
-			case ActionEffectType.OpenWoodChest:
-				{
-					var woodLoots = new string[] { "清水", "生魚", "木材" };
-					string item = woodLoots[new Random().Next(woodLoots.Length)];
-					var card = CreateConsumableCard(item, 5, 0, 0, 0);
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(card))
-					{
-						GameState.Instance.AddLog($"你開啟了木箱，獲得了：【{item}】，放入背包。");
-					}
-					else
-					{
-						GameState.Instance.AddLog($"【過重】背包過重，無法裝下【{item}】，你只好將其留在木箱中！");
-					}
-					RemoveActionFromCurrentScene("開啟");
-				}
-				break;
-			case ActionEffectType.OpenIronChest:
-				{
-					var tools = new string[] { "火把", "水瓶" };
-					string item = tools[new Random().Next(tools.Length)];
-					var card = new Card { 
-						CardName = item, 
-						CardType = CardType.Equipment, 
-						Weight = 2, 
-						Description = $"實用的冒險工具：{item}。" 
-					};
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(card))
-					{
-						GameState.Instance.AddLog($"你合力撬開了鐵箱，獲得了：【{item}】，放入背包。");
-					}
-					else
-					{
-						GameState.Instance.AddLog($"【過重】背包過重，無法裝下【{item}】，你將其遺留在鐵箱內！");
-					}
-					RemoveActionFromCurrentScene("撬開");
-				}
-				break;
-			case ActionEffectType.TouchCursedChest:
-				{
-					GameState.Instance.PlayerInstance.CurrentSanity -= 10;
-					GameState.Instance.PlayerInstance.Corruption += 10;
-					var sword = new Card {
-						CardName = "柴刀",
-						CardType = CardType.Equipment,
-						Weight = 3,
-						StrValue = 1,
-						Description = "沾滿暗紅鏽跡的開山柴刀。可於戰鬥中使力量卡牌點數 +1。"
-					};
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(sword))
-					{
-						GameState.Instance.AddLog("當你觸碰那刻印箱的瞬間，刺骨的冰冷低語湧入腦海（理智-10，穢祟+10）...你獲得了【柴刀】！");
-					}
-					else
-					{
-						GameState.Instance.AddLog("當你觸碰刻印箱的瞬間，刺骨低語湧入腦海（理智-10，穢祟+10）...但背包裝不下【柴刀】，你將其掉在地上！");
-					}
-					RemoveActionFromCurrentScene("觸摸");
-				}
-				break;
-			case ActionEffectType.EnterNormalCabin:
-				{
-					GameState.Instance.IsIndoor = true;
-					GameState.Instance.IndoorDepth = 1;
-					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
-					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
-					GameState.Instance.AddLog("你推開木門，進入了陰暗的木屋內。");
-				}
-				break;
-			case ActionEffectType.EnterStrangeCabin:
-				{
-					GameState.Instance.PlayerInstance.CurrentSanity -= 10;
-					GameState.Instance.IsIndoor = true;
-					GameState.Instance.IndoorDepth = 3;
-					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
-					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(3);
-					GameState.Instance.AddLog("推開血色木門的剎那，刺鼻的血腥與瘋狂念頭撲面而來（理智 -10）！你深入了小屋深處。");
-				}
-				break;
-			case ActionEffectType.EnterCave:
-				{
-					GameState.Instance.PlayerInstance.CurrentHp -= 15;
-					GameState.Instance.IsIndoor = true;
-					GameState.Instance.IndoorDepth = 1;
-					GameState.Instance.EntranceNodeId = MapManager.Instance.CurrentNodeId;
-					MapManager.Instance.CurrentIndoorScene = MapManager.Instance.GenerateIndoorScene(1);
-					GameState.Instance.AddLog("你小心地爬入狹窄的石洞，尖銳的岩石劃傷了你的皮膚（體力 -15）。你進入了黑暗的洞穴。");
-				}
-				break;
-			case ActionEffectType.TradeHunter:
-				{
-					if (GameState.Instance.PlayerInstance.CurrentHunger < 10)
-					{
-						GameState.Instance.AddLog("你已經飢餓交迫，無法進行交易！");
-						break;
-					}
-					GameState.Instance.PlayerInstance.CurrentHunger -= 10;
-					var ration = CreateConsumableCard("乾糧", 0, 0, -15, 0);
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(ration))
-					{
-						GameState.Instance.AddLog("你將物資與獵人交易（飢餓值 -10），獲得了【乾糧】。");
-					}
-					else
-					{
-						GameState.Instance.AddLog("你將物資與獵人交易（飢餓值 -10），但背包過重裝不下【乾糧】，只好把乾糧遺棄了！");
-					}
-					RemoveActionFromCurrentScene("與");
-				}
-				break;
-			case ActionEffectType.WitchRitual:
-				{
-					GameState.Instance.PlayerInstance.CurrentHp -= 20;
-					GameState.Instance.PlayerInstance.CurrentSanity -= 10;
-					GameState.Instance.PlayerInstance.Corruption += 15;
-					var nightmare = new Card {
-						CardName = "舊日殘影",
-						CardType = CardType.Passive,
-						Weight = 1,
-						Description = "在魔女指尖跳動的瘋狂殘影。被打出時可使本回合所有智慧卡點數翻倍，但代價是永久扣除 5 點最大理智。"
-					};
-					if (GameState.Instance.DeckInstance.AddCardToDiscardPile(nightmare))
-					{
-						GameState.Instance.AddLog("魔女的指甲深深刺入你的掌心，滾燙的禁忌知識在血液中燃燒（體力-20，理智-10，穢祟+15）。你獲得了【舊日殘影】。");
-					}
-					else
-					{
-						GameState.Instance.AddLog("魔女的指甲深深刺入掌心，滾燙的知識在燃燒（體力-20，理智-10，穢祟+15）...但背包裝不下【舊日殘影】，殘影逸散在空氣中。");
-					}
-					RemoveActionFromCurrentScene("接受");
-				}
-				break;
+			_sceneEffect.Shake(10.0f, 0.4f);
 		}
 
 		TurnManager.Instance.AccumulatedStr = 0;
@@ -873,20 +499,219 @@ public partial class MainScene : Control
 		Label endingLabel = new Label();
 		endingLabel.Text = $"【 遊戲結束 │ {title} 】\n\n{description}\n\n[ 反覆遊玩以解鎖角色所有的背景故事 ]";
 		endingLabel.Modulate = new Color(1.0f, 0.13f, 0.13f);
+		endingLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+		endingLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		endingLabel.AddThemeFontOverride("font", GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font"));
 		_actionList.AddChild(endingLabel);
+
+		// Back to Main Menu Button
+		Button backToMenuBtn = new Button();
+		backToMenuBtn.Text = "▶ 返回主選單";
+		backToMenuBtn.AddThemeFontOverride("font", GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font"));
+		backToMenuBtn.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		backToMenuBtn.Pressed += () => {
+			GetTree().ReloadCurrentScene();
+		};
+		_actionList.AddChild(backToMenuBtn);
 	}
 
-	private void RemoveActionFromCurrentScene(string prefix)
+	private void SetGameplayUiVisible(bool visible)
 	{
-		var mapManager = MapManager.Instance;
-		var currentNode = mapManager.Nodes[mapManager.CurrentNodeId];
-		for (int i = currentNode.SceneData.Actions.Count - 1; i >= 0; i--)
+		GetNode<Control>("StatsPanel").Visible = visible;
+		GetNode<Control>("MapPanel").Visible = visible;
+		GetNode<Control>("ItemsPanel").Visible = visible;
+		GetNode<Control>("HandUI").Visible = visible;
+		GetNode<Control>("SystemBanner").Visible = visible;
+		GetNode<Control>("AvatarPanel").Visible = visible;
+		GetNode<Control>("CenterViewport/ActionPanel").Visible = visible;
+	}
+
+	private void ShowTitleBackdrop()
+	{
+		_baseTexture.Texture = GD.Load<Texture2D>("res://assets/ascii_art/scenes/perspective_template.png");
+		_groundTexture.Texture = GD.Load<Texture2D>("res://assets/ascii_art/scenes/ground_dirt.png");
+		_leftTerrainTexture.Texture = GD.Load<Texture2D>("res://assets/ascii_art/scenes/terrain_woodland_left.png");
+		_rightTerrainTexture.Texture = GD.Load<Texture2D>("res://assets/ascii_art/scenes/terrain_woodland_right.png");
+		_decalLeftTexture.Texture = GD.Load<Texture2D>("res://assets/ascii_art/scenes/decal_tent_left.png");
+		_decalRightTexture.Texture = null;
+		_weatherTexture.Texture = null;
+		
+		_leftTerrainTexture.Visible = true;
+		_rightTerrainTexture.Visible = true;
+	}
+
+	private void CreateMainMenu()
+	{
+		_mainMenuPanel = new Panel();
+		var centerViewport = GetNode<Control>("CenterViewport");
+		centerViewport.AddChild(_mainMenuPanel);
+		
+		_mainMenuPanel.SetAnchorsPreset(LayoutPreset.CenterBottom);
+		_mainMenuPanel.GrowHorizontal = GrowDirection.Both;
+		_mainMenuPanel.GrowVertical = GrowDirection.Begin;
+		_mainMenuPanel.OffsetLeft = -200;
+		_mainMenuPanel.OffsetTop = -220;
+		_mainMenuPanel.OffsetRight = 200;
+		_mainMenuPanel.OffsetBottom = -20;
+
+		var styleBox = new StyleBoxFlat();
+		styleBox.BgColor = new Color(0, 0, 0, 1);
+		styleBox.BorderColor = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		styleBox.BorderWidthLeft = 2;
+		styleBox.BorderWidthTop = 2;
+		styleBox.BorderWidthRight = 2;
+		styleBox.BorderWidthBottom = 2;
+		_mainMenuPanel.AddThemeStyleboxOverride("panel", styleBox);
+
+		var margin = new MarginContainer();
+		margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect, LayoutPresetMode.Minsize, 10);
+		_mainMenuPanel.AddChild(margin);
+
+		var vbox = new VBoxContainer();
+		vbox.AddThemeConstantOverride("separation", 8);
+		margin.AddChild(vbox);
+
+		var title = new Label();
+		title.Text = "【 森林深處 │ DEEPFOREST 】";
+		var font = GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font");
+		title.AddThemeFontOverride("font", font);
+		title.AddThemeFontSizeOverride("font_size", 14);
+		title.AddThemeColorOverride("font_color", new Color(0.223f, 1.0f, 0.078f, 1.0f));
+		title.HorizontalAlignment = HorizontalAlignment.Center;
+		vbox.AddChild(title);
+
+		vbox.AddChild(new HSeparator());
+
+		var btnStart = new Button();
+		btnStart.Text = "▶ 開始遊戲";
+		btnStart.AddThemeFontOverride("font", font);
+		btnStart.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		btnStart.Pressed += StartNewGame;
+		vbox.AddChild(btnStart);
+
+		var btnContinue = new Button();
+		btnContinue.Text = "▶ 繼續遊戲";
+		btnContinue.AddThemeFontOverride("font", font);
+		
+		bool hasSave = SessionSaveSystem.HasSessionSave();
+		if (hasSave)
 		{
-			if (currentNode.SceneData.Actions[i].ActionName.StartsWith(prefix))
-			{
-				currentNode.SceneData.Actions.RemoveAt(i);
-			}
+			btnContinue.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+			btnContinue.Pressed += ContinueSavedGame;
 		}
+		else
+		{
+			btnContinue.Modulate = new Color(0.3f, 0.4f, 0.2f, 1.0f);
+			btnContinue.Disabled = true;
+		}
+		vbox.AddChild(btnContinue);
+
+		var btnAchievements = new Button();
+		btnAchievements.Text = "▶ 歷史成就 (未開放)";
+		btnAchievements.AddThemeFontOverride("font", font);
+		btnAchievements.Modulate = new Color(0.3f, 0.4f, 0.2f, 1.0f);
+		btnAchievements.Disabled = true;
+		vbox.AddChild(btnAchievements);
+
+		var btnSettings = new Button();
+		btnSettings.Text = "▶ 系統設定";
+		btnSettings.AddThemeFontOverride("font", font);
+		btnSettings.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		btnSettings.Pressed += OpenSettings;
+		vbox.AddChild(btnSettings);
+
+		var btnExit = new Button();
+		btnExit.Text = "▶ 結束遊戲";
+		btnExit.AddThemeFontOverride("font", font);
+		btnExit.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		btnExit.Pressed += () => GetTree().Quit();
+		vbox.AddChild(btnExit);
+	}
+
+	private void StartNewGame()
+	{
+		SessionSaveSystem.DeleteSession();
+		_mainMenuPanel.Visible = false;
+		SetGameplayUiVisible(true);
+		MapManager.Instance.GenerateMap();
+
+		string charName = "default_male";
+		string selected = SaveManager.CurrentSave.SelectedCharacter;
+		if (selected == "湯自強") charName = "john";
+		else if (selected == "劉淑莉") charName = "sarah";
+		else if (selected == "李有志") charName = "leo";
+		else if (selected == "李曉琳") charName = "celin";
+		else if (selected == "于晞") charName = "nancy";
+		else if (selected == "湯明亮") charName = "tommy";
+
+		var characterRes = GD.Load<CharacterData>($"res://src/resources/characters/character_{charName}.tres");
+		var player = GameState.Instance.PlayerInstance;
+		player.InitializeFromData(characterRes);
+
+		var startingCards = new List<Card>(characterRes.StartingDeck);
+		GameState.Instance.DeckInstance.Initialize(startingCards);
+
+		UpdateHUD();
+		UpdateMap();
+		UpdateSystemBanner();
+		UpdateActionsList();
+		UpdateSceneAndAvatar();
+
+		TurnManager.Instance.StartTurn();
+
+		GameState.Instance.AddLog("你醒了過來。四周是一片未知的、死寂的森林。");
+	}
+
+	private void ContinueSavedGame()
+	{
+		bool success = SessionSaveSystem.LoadSession(GameState.Instance, MapManager.Instance);
+		if (!success)
+		{
+			GameState.Instance.AddLog("讀取存檔失敗！");
+			return;
+		}
+
+		_mainMenuPanel.Visible = false;
+		SetGameplayUiVisible(true);
+
+		UpdateHUD();
+		UpdateMap();
+		UpdateSystemBanner();
+		UpdateActionsList();
+		UpdateSceneAndAvatar();
+
+		GameState.Instance.AddLog("存檔載入完成。你回到了森林深處。");
+	}
+
+	private void OpenSettings()
+	{
+		_mainMenuPanel.Visible = false;
+
+		if (_settingsPanel == null)
+		{
+			_settingsPanel = new SettingsPanelUI();
+			var centerViewport = GetNode<Control>("CenterViewport");
+			centerViewport.AddChild(_settingsPanel);
+
+			_settingsPanel.CustomMinimumSize = new Vector2(320, 260);
+			_settingsPanel.SetAnchorsPreset(LayoutPreset.Center);
+			_settingsPanel.GrowHorizontal = GrowDirection.Both;
+			_settingsPanel.GrowVertical = GrowDirection.Both;
+			_settingsPanel.OffsetLeft = -160;
+			_settingsPanel.OffsetTop = -130;
+			_settingsPanel.OffsetRight = 160;
+			_settingsPanel.OffsetBottom = 130;
+			
+			var font = GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font");
+			_settingsPanel.Initialize(font);
+			_settingsPanel.SettingsClosed += CloseSettings;
+		}
+		_settingsPanel.Visible = true;
+	}
+
+	private void CloseSettings()
+	{
+		_settingsPanel.Visible = false;
+		_mainMenuPanel.Visible = true;
 	}
 }

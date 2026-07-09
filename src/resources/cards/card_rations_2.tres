@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardId = 65
+CardName = "營養口糧(2/3)"
+CardClass = 3
+Weight = 3
+StrValue = 0
+DexValue = 0
+WisValue = 0
+HungerCost = -5
+ThirstCost = 3
+HpCost = 0
+SanityCost = 0
+Description = "使用 營養口糧(2/3)。回復飢餓 5，口渴 -3。使用後，加入一張「營養口糧(1/3)」到牌組中並消滅本卡。"
+MaxUses = 0

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardId = 22
+CardName = "重整"
+CardType = 5
+Description = "本卡永遠保留在手上。消耗 5 飢餓、5 口渴，抽 2 張牌。"
+DexValue = 0
+HpCost = 0
+HungerCost = 5
+SanityCost = 0
+StrValue = 0
+ThirstCost = 5
+Weight = 0
+WisValue = 0

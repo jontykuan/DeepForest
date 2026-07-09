@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardId = 73
+CardName = "手電筒"
+CardType = 4
+Description = "裝備。裝備時在黑暗中獲得照明。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 2
+WisValue = 0

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 3
+CardId = 64
+CardName = "巧克力"
+Description = "幸福的味道。恢復大量飢餓與理智。"
+DexValue = 0
+HpCost = 0
+HungerCost = -10
+MaxUses = 0
+SanityCost = -15
+StrValue = 0
+ThirstCost = 0
+Weight = 0
+WisValue = 0

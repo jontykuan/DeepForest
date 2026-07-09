@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BalanceData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/core/BalanceData.cs" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+BaseHpRecovery = 8
+BaseSanityRecovery = 5
+ThirstDepletion = 3
+HungerDepletion = 3
+FleeHpCost = 5
+FleeSanityCost = 10
+EndingBrutalityThreshold = 80
+EndingCorruptionThreshold = 80
+EndingEvilThreshold = 80

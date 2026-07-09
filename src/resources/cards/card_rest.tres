@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardId = 40
+CardName = "短暫休息"
+CardType = 0
+Description = "消耗飢餓 5，口渴 5，回復體力 10，理智 3。"
+DexValue = 0
+HpCost = 0
+HungerCost = 5
+SanityCost = 0
+StrValue = 0
+ThirstCost = 5
+Weight = 1
+WisValue = 0

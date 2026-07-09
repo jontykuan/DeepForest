@@ -24,7 +24,22 @@ public enum ActionEffectType
     EnterStrangeCabin,
     EnterCave,
     TradeHunter,
-    WitchRitual
+    WitchRitual,
+    OpenNormalCabinDoor,
+    OpenStrangeCabinDoor,
+    OpenCaveEntrance,
+    ClearRuinsPassage,
+    SearchRuinsEntrance,
+    FindDog,
+    SarahMeetNancy,
+    LeoMeetTommy,
+    JohnMeetSarah,
+    JohnMeetNancy,
+    SearchStoryItem,
+    FindDogInspect,
+    FindDogEmbrace,
+    UsePliersToRemoveCollar,
+    LeoCraft
 }
 
 public enum ThresholdType
@@ -45,4 +60,5 @@ public partial class SceneAction : Resource
     [Export] public string RequiredItem { get; set; } = "";
     [Export] public ActionEffectType EffectType { get; set; } = ActionEffectType.None;
     [Export] public int HpCostOnComplete { get; set; } = 2; 
+    [Export] public int TargetNodeId { get; set; } = -1;
 }

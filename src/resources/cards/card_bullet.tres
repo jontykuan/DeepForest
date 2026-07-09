@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 3
+CardId = 66
+CardName = "子彈"
+Description = "物品。.38子彈，裝備手槍時可以打出使用。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 0
+WisValue = 0

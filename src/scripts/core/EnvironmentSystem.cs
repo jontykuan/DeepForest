@@ -9,7 +9,7 @@ public enum HumidityType { Dry, Moderate, Humid, ExtremelyHumid }
 
 public partial class EnvironmentSystem : Node
 {
-    public static EnvironmentSystem Instance { get; private set; } = null!;
+    public static EnvironmentSystem Instance { get; set; } = null!;
 
     public WeatherType Weather { get; set; } = WeatherType.Clear;
     public TempType Temperature { get; set; } = TempType.Cool;

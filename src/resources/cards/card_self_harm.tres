@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 0
+CardId = 30
+CardName = "自殘"
+Description = "扣除當前體力的 1/10 (最小值為 1)，增加 1 張[割痕]至棄牌堆，並恢復等同扣除體力的理智。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

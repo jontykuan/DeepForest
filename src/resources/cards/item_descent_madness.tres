@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 7
+CardId = 130
+CardName = "狂亂"
+Description = "恍惚之間，超然的存在即將降臨。跪拜吧。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

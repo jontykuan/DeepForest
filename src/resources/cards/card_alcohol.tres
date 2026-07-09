@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 3
+CardId = 51
+CardName = "烈酒"
+Description = "一醉解千愁。/n使用後略微恢復理智，但變得更加口渴和衝動。有概率加入負面卡「成癮」到牌組中。使用後得到空瓶。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 0
+SanityCost = -10
+StrValue = 0
+ThirstCost = 3
+Weight = 1
+WisValue = 0

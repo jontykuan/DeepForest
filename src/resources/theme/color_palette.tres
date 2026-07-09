@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ColorPalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/core/ColorPalette.cs" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+RadiantGreen = Color(0.22, 1, 0.08, 1)
+BloodRed = Color(1, 0, 0.2, 1)
+DarkRed = Color(0.4, 0, 0, 1)
+DarkBlue = Color(0, 0, 0.4, 1)
+SilentWhite = Color(0.9, 0.9, 0.9, 1)
+SoftGray = Color(0.5, 0.5, 0.5, 1)

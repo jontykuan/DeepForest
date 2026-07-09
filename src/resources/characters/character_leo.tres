@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=14 format=3]
+
+[ext_resource type="Resource" path="res://src/resources/cards/card_strength.tres" id="1_str"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_dexterity.tres" id="2_dex"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_dexterity_2.tres" id="2_dex2"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_wisdom.tres" id="3_wis"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_rations.tres" id="4_rations"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_water_flask.tres" id="5_water"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_flashlight.tres" id="8_flashlight"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_search_backpack.tres" id="6_search"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_rest.tres" id="7_rest"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_rearrange.tres" id="12_rearrange"]
+[ext_resource type="Script" path="res://src/scripts/character/CharacterData.cs" id="9_char_script"]
+
+[resource]
+script = ExtResource("9_char_script")
+CharacterId = 4
+CharacterName = "李有志"
+MaxHp = 90
+MaxSanity = 100
+MaxHunger = 50
+MaxThirst = 50
+Draw = 5
+HandLimit = 7
+DeckCapacity = 30
+StartingDeck = Array[Resource]([ExtResource("1_str"), ExtResource("1_str"), ExtResource("2_dex"), ExtResource("2_dex"), ExtResource("2_dex"), ExtResource("2_dex2"), ExtResource("2_dex2"), ExtResource("3_wis"), ExtResource("3_wis"), ExtResource("4_rations"), ExtResource("5_water"), ExtResource("8_flashlight"), ExtResource("6_search"), ExtResource("7_rest"), ExtResource("12_rearrange"), ExtResource("12_rearrange")])
+StartingBrutality = 0
+StartingCorruption = 5
+StartingEvil = 0

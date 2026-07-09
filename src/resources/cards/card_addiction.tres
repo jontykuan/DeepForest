@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 6
+CardId = 132
+CardName = "成癮"
+Description = "你的渴望在啃食你的心智，某種衝動漸漸變得難以克制。/n打出時略為降低理智。當此牌留在手牌中經過換日，將1張[成癮]加入棄牌堆中。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

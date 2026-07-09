@@ -1,5 +1,7 @@
 using Godot;
 using System;
+using DeepForest.Core;
+using DeepForest.Cards;
 
 namespace DeepForest.Character;
 
@@ -42,7 +44,22 @@ public partial class Player : Node
     
     public int MaxSanity
     {
-        get => _maxSanity;
+        get
+        {
+            int val = _maxSanity;
+            if (GameState.Instance?.DeckInstance != null)
+            {
+                if (DeepForest.Cards.CardQueryHelper.HasCardAnywhere(GameState.Instance.DeckInstance, CardId.KeyRecordingTape))
+                {
+                    val += 10;
+                }
+                if (DeepForest.Cards.CardQueryHelper.HasCardEquipped(GameState.Instance.DeckInstance, CardId.KeyJerryCollar))
+                {
+                    val -= 10;
+                }
+            }
+            return val;
+        }
         set { int old = _maxSanity; _maxSanity = value; EmitSignal(SignalName.StatChanged, "MaxSanity", old, value); }
     }
     
@@ -52,7 +69,7 @@ public partial class Player : Node
         set 
         { 
             int old = _currentSanity; 
-            _currentSanity = Math.Clamp(value, 0, _maxSanity); 
+            _currentSanity = Math.Clamp(value, 0, MaxSanity); 
             EmitSignal(SignalName.StatChanged, "CurrentSanity", old, _currentSanity); 
         }
     }
@@ -100,13 +117,38 @@ public partial class Player : Node
     public int Corruption
     {
         get => _corruption;
-        set => _corruption = Math.Clamp(value, 0, 100);
+        set
+        {
+            int val = value;
+            if (val > _corruption && GameState.Instance?.DeckInstance != null && CardQueryHelper.HasCardEquipped(GameState.Instance.DeckInstance, CardId.KeyJerry))
+            {
+                int diff = val - _corruption;
+                val = _corruption + (int)Math.Ceiling(diff * 0.5f);
+            }
+            int old = _corruption;
+            _corruption = Math.Clamp(val, 0, 100);
+            
+            if (_corruption >= 50 && CharacterData?.CharacterId == CharacterId.Leo && GameState.Instance != null && !GameState.Instance.IsDescentActive)
+            {
+                GameState.Instance.IsDescentActive = true;
+                GameState.Instance.AddLog("【神降儀式開始】空氣中瀰漫著古老邪異的氣息... 你再也無法建造普通的營火，邪神的力量正在侵蝕你的理智！");
+            }
+        }
     }
     
     public int Evil
     {
         get => _evil;
-        set => _evil = Math.Clamp(value, 0, 100);
+        set
+        {
+            int val = value;
+            if (val > _evil && GameState.Instance?.DeckInstance != null && CardQueryHelper.HasCardEquipped(GameState.Instance.DeckInstance, CardId.KeyJerry))
+            {
+                int diff = val - _evil;
+                val = _evil + (int)Math.Ceiling(diff * 0.5f);
+            }
+            _evil = Math.Clamp(val, 0, 100);
+        }
     }
 
     public int Draw { get; set; } = 5;
@@ -137,5 +179,13 @@ public partial class Player : Node
         Draw = data.Draw;
         HandLimit = data.HandLimit;
         DeckCapacity = data.DeckCapacity;
+        Brutality = data.StartingBrutality;
+        Corruption = data.StartingCorruption;
+        Evil = data.StartingEvil;
+
+        if (GameState.Instance != null)
+        {
+            GameState.Instance.CurrentStoryHandler = DeepForest.Narrative.Handlers.StoryHandlerFactory.Create(data.CharacterId);
+        }
     }
 }

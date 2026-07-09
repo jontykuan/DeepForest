@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 3
+CardId = 57
+CardName = "生魚"
+Description = "生魚：食用後恢復飢餓，但會扣除理智，但有概率加入「腹瀉」到牌組中。在營火處可加工為烤魚。"
+DexValue = 0
+HpCost = 5
+HungerCost = -10
+MaxUses = 0
+SanityCost = 5
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

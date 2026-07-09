@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 5
+CardId = 106
+CardName = "教徒手冊"
+Description = "記載著一些激進的教條和儀式。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

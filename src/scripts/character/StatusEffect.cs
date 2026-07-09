@@ -1,35 +1,25 @@
 using Godot;
 using System.Collections.Generic;
+using System.Linq;
 using DeepForest.Cards;
 
 namespace DeepForest.Character;
 
 public static class StatusEffect
 {
-    public static bool HasEffect(IEnumerable<Card> cards, string effectName)
+    public static bool HasEffect(IEnumerable<Card> cards, CardEffectTag tag)
     {
-        foreach (var card in cards)
-        {
-            if (card.CardName == effectName)
-                return true;
-        }
-        return false;
+        return cards.Any(card => card.EffectTags.HasFlag(tag));
     }
 
-    public static bool HasLeftEyeBlindness(IEnumerable<Card> cards) => HasEffect(cards, "失明（左眼）");
-    public static bool HasRightEyeBlindness(IEnumerable<Card> cards) => HasEffect(cards, "失明（右眼）");
-    public static bool HasBrokenFinger(IEnumerable<Card> cards) => HasEffect(cards, "手指骨折");
-    public static bool HasBrokenArm(IEnumerable<Card> cards) => HasEffect(cards, "手臂脫臼");
-    public static bool HasTextDistortion(IEnumerable<Card> cards) => HasEffect(cards, "文字扭曲") || HasEffect(cards, "幻聽");
+    public static bool HasLeftEyeBlindness(IEnumerable<Card> cards) => HasEffect(cards, CardEffectTag.BlindnessLeft);
+    public static bool HasRightEyeBlindness(IEnumerable<Card> cards) => HasEffect(cards, CardEffectTag.BlindnessRight);
+    public static bool HasBrokenFinger(IEnumerable<Card> cards) => HasEffect(cards, CardEffectTag.BrokenFinger);
+    public static bool HasBrokenArm(IEnumerable<Card> cards) => HasEffect(cards, CardEffectTag.BrokenArm);
+    public static bool HasTextDistortion(IEnumerable<Card> cards) => HasEffect(cards, CardEffectTag.TextDistortion) || HasEffect(cards, CardEffectTag.Hallucination);
 
     public static int GetFractureCount(IEnumerable<Card> cards)
     {
-        int count = 0;
-        foreach (var card in cards)
-        {
-            if (card.CardName == "骨折")
-                count++;
-        }
-        return count;
+        return cards.Count(card => card.EffectTags.HasFlag(CardEffectTag.Fracture));
     }
 }

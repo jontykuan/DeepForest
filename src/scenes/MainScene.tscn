@@ -3,6 +3,14 @@
 [ext_resource type="Script" uid="uid://dsj38x7tcisc6" path="res://src/scripts/ui/MainScene.cs" id="1_main_script"]
 [ext_resource type="FontFile" uid="uid://cpi35l8htb1i8" path="res://assets/fonts/msgothic.ttc" id="4_font"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_opaque_black"]
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.219608, 1, 0.0784314, 1)
+
 [node name="MainScene" type="Control" unique_id=1618667164]
 layout_mode = 3
 anchors_preset = 15
@@ -42,7 +50,7 @@ offset_right = 280.0
 offset_bottom = -410.0
 grow_vertical = 2
 
-[node name="AvatarLabel" type="RichTextLabel" parent="AvatarPanel" unique_id=1432422132]
+[node name="AvatarTexture" type="TextureRect" parent="AvatarPanel" unique_id=1432422132]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -50,14 +58,11 @@ anchor_bottom = 1.0
 offset_left = 10.0
 offset_top = 10.0
 offset_right = -10.0
-offset_bottom = 1.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_fonts/normal_font = ExtResource("4_font")
-theme_override_font_sizes/normal_font_size = 9
-bbcode_enabled = true
-scroll_active = false
-autowrap_mode = 0
+expand_mode = 1
+stretch_mode = 5
 
 [node name="StatsPanel" type="Panel" parent="." unique_id=1036069769]
 layout_mode = 1
@@ -102,21 +107,86 @@ offset_bottom = -160.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SceneLabel" type="RichTextLabel" parent="CenterViewport" unique_id=1854847820]
+[node name="SceneContainer" type="Control" parent="CenterViewport" unique_id=1854847820]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_fonts/normal_font = ExtResource("4_font")
-theme_override_font_sizes/normal_font_size = 21
-bbcode_enabled = true
-scroll_active = false
-autowrap_mode = 0
+
+[node name="BaseTexture" type="TextureRect" parent="CenterViewport/SceneContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GroundTexture" type="TextureRect" parent="CenterViewport/SceneContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LeftTerrainTexture" type="TextureRect" parent="CenterViewport/SceneContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightTerrainTexture" type="TextureRect" parent="CenterViewport/SceneContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DecalLeftTexture" type="TextureRect" parent="CenterViewport/SceneContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DecalRightTexture" type="TextureRect" parent="CenterViewport/SceneContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WeatherTexture" type="TextureRect" parent="CenterViewport/SceneContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="ActionPanel" type="Panel" parent="CenterViewport" unique_id=26748336]
-self_modulate = Color(1, 1, 1, 0.8)
+theme_override_styles/panel = SubResource("StyleBoxFlat_opaque_black")
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -130,7 +200,7 @@ offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="ActionList" type="VBoxContainer" parent="CenterViewport/ActionPanel" unique_id=852468987]
+[node name="ActionScroll" type="ScrollContainer" parent="CenterViewport/ActionPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -141,6 +211,12 @@ offset_right = -15.0
 offset_bottom = -15.0
 grow_horizontal = 2
 grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="ActionList" type="VBoxContainer" parent="CenterViewport/ActionPanel/ActionScroll" unique_id=852468987]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
 [node name="MapPanel" type="Panel" parent="." unique_id=1163435261]

@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=18 format=3]
+
+[ext_resource type="Resource" path="res://src/resources/cards/card_strength.tres" id="1_str"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_strength_3.tres" id="1_str3"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_dexterity.tres" id="2_dex"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_dexterity_3.tres" id="2_dex3"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_wisdom.tres" id="3_wis"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_wisdom_3.tres" id="3_wis3"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_rations.tres" id="4_rations"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_water_flask.tres" id="5_water"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_flashlight.tres" id="8_flashlight"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_search_backpack.tres" id="6_search"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_rest.tres" id="7_rest"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_fatigue.tres" id="10_fatigue"]
+[ext_resource type="Script" path="res://src/scripts/character/CharacterData.cs" id="9_char_script"]
+[ext_resource type="Resource" path="res://src/resources/cards/card_whistle.tres" id="11_whistle"]
+
+[ext_resource type="Resource" path="res://src/resources/cards/card_hide_and_seek.tres" id="12_hide"]
+
+[ext_resource type="Resource" path="res://src/resources/cards/card_peek_a_boo.tres" id="13_peek"]
+
+
+[resource]
+script = ExtResource("9_char_script")
+CharacterId = 6
+CharacterName = "湯明亮"
+MaxHp = 70
+MaxSanity = 80
+MaxHunger = 40
+MaxThirst = 40
+Draw = 5
+HandLimit = 7
+DeckCapacity = 30
+StartingDeck = Array[Resource]([ExtResource("1_str"), ExtResource("1_str"), ExtResource("1_str3"), ExtResource("2_dex"), ExtResource("2_dex"), ExtResource("2_dex3"), ExtResource("3_wis"), ExtResource("3_wis3"), ExtResource("4_rations"), ExtResource("5_water"), ExtResource("8_flashlight"), ExtResource("6_search"), ExtResource("7_rest"), ExtResource("10_fatigue"), ExtResource("11_whistle"), ExtResource("12_hide"), ExtResource("13_peek")])
+StartingBrutality = 0
+StartingCorruption = 0
+StartingEvil = 0

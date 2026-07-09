@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardId = 35
+CardName = "敏捷2"
+CardType = 1
+Description = "提供敏捷 2 點。"
+DexValue = 2
+HpCost = 0
+HungerCost = 2
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 3
+CardId = 65
+CardName = "狗食"
+Description = "狗食：食用後微幅恢復飢餓，略微降低理智。還有誰會喜歡吃這種東西。"
+DexValue = 0
+HpCost = 0
+HungerCost = -8
+MaxUses = 0
+SanityCost = 5
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

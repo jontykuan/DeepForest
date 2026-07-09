@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardId = 144
+CardName = "疲勞"
+CardType = 7
+Description = "傷勢。當這張卡在手牌中時，每打出一張牌就消耗1點飢餓、1點口渴。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 0
+WisValue = 0

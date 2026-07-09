@@ -4,14 +4,15 @@
 
 [resource]
 script = ExtResource("1_card_script")
-CardName = "水壺"
+CardId = 49
+CardName = "礦泉水"
 CardType = 3
-Weight = 1
-StrValue = 0
+Description = "回復飢渴。使用後獲得一個空瓶。"
 DexValue = 0
-WisValue = 0
-HungerCost = 0
-ThirstCost = -10
 HpCost = 0
+HungerCost = -15
 SanityCost = 0
-Description = "使用 水壺。回復口渴 10。"
+StrValue = 0
+ThirstCost = -15
+Weight = 5
+WisValue = 0

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 3
+CardId = 53
+CardName = "安眠藥"
+Description = "可重複使用3次。使用後大幅恢復理智，但會直接在當前場景進入換日階段。有機率加入負面卡「成癮」到牌庫中，用完可獲得空藥罐。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 3
+SanityCost = -40
+StrValue = 0
+ThirstCost = 0
+Weight = 0
+WisValue = 0

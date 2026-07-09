@@ -20,6 +20,7 @@ GameState="*res://src/scripts/core/GameState.cs"
 EnvironmentSystem="*res://src/scripts/core/EnvironmentSystem.cs"
 MapManager="*res://src/scripts/scene/MapManager.cs"
 TurnManager="*res://src/scripts/core/TurnManager.cs"
+CombatManager="*res://src/scripts/combat/CombatManager.cs"
 
 [display]
 

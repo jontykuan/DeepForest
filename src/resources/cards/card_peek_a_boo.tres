@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 2
+CardId = 44
+CardName = "躲貓貓"
+Description = "躲貓貓：消耗 5 飢餓。丟棄 1 張手牌，抽 2 張牌。若抽出的牌為相同類型，獲得智慧 5。"
+DexValue = 0
+HpCost = 0
+HungerCost = 5
+MaxUses = 0
+SanityCost = 0
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0

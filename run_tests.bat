@@ -1,0 +1,2 @@
+@echo off
+d:\cykuan\Godot_v4.6.2-stable_mono_win64\Godot_v4.6.2-stable_mono_win64_console.exe --headless --script tests/TestRunner.cs

@@ -4,14 +4,15 @@
 
 [resource]
 script = ExtResource("1_card_script")
-CardName = "乾糧"
+CardId = 61
+CardName = "營養口糧(3/3)"
 CardType = 3
-Weight = 1
-StrValue = 0
+Description = "物品。略為回復飢餓，但變得口渴。使用後，加入一張「營養口糧(2/3)」到牌組中並消滅本卡。"
 DexValue = 0
-WisValue = 0
-HungerCost = -8
-ThirstCost = 3
 HpCost = 0
+HungerCost = -5
 SanityCost = 0
-Description = "使用 乾糧。回復飢餓 8，口渴 -3。"
+StrValue = 0
+ThirstCost = 3
+Weight = 3
+WisValue = 0

@@ -11,7 +11,7 @@ public class SceneRenderer
 	private int _height;
 	private TextGrid _buffer;
 
-	public SceneRenderer(int width = 68, int height = 24)
+	public SceneRenderer(int width = 136, int height = 48)
 	{
 		_width = width;
 		_height = height;
@@ -57,11 +57,11 @@ public class SceneRenderer
 	{
 		string baseDir = "res://assets/ascii_art/scenes";
 
-		// 1. 載入透視基底線條
+		// 1. Load perspective base grid
 		TextGrid baseGrid = AsciiTemplate.Load($"{baseDir}/perspective_template.txt", null, "scene");
 		_buffer.Blit(baseGrid, 0, 0, false);
 
-		// 2. 載入地面
+		// 2. Load ground
 		string groundPath = $"{baseDir}/ground_{sd.BottomGround}.txt";
 		if (Godot.FileAccess.FileExists(groundPath))
 		{
@@ -69,7 +69,7 @@ public class SceneRenderer
 			_buffer.Blit(groundGrid, 0, 0, false);
 		}
 
-		// 3. 載入左側地形
+		// 3. Load left terrain
 		string leftPath = $"{baseDir}/terrain_{sd.LeftTerrain}_left.txt";
 		if (Godot.FileAccess.FileExists(leftPath))
 		{
@@ -77,7 +77,7 @@ public class SceneRenderer
 			_buffer.Blit(leftGrid, 0, 0, false);
 		}
 
-		// 4. 載入右側地形
+		// 4. Load right terrain
 		string rightPath = $"{baseDir}/terrain_{sd.RightTerrain}_right.txt";
 		if (Godot.FileAccess.FileExists(rightPath))
 		{
@@ -85,7 +85,7 @@ public class SceneRenderer
 			_buffer.Blit(rightGrid, 0, 0, false);
 		}
 
-		// 5. 載入貼圖 (Decals) - 強制覆蓋
+		// 5. Load Decals
 		foreach (var decal in sd.Decals)
 		{
 			string decalPath = $"{baseDir}/decal_{decal}.txt";
@@ -99,11 +99,9 @@ public class SceneRenderer
 
 	private void GenerateFallbackScene(SceneData sd)
 	{
-		// C# 數學透視象限 Fallback 渲染器 - 2ch AA 風格
-		Color fgColor = new Color(0.22f, 1.0f, 0.08f); // 輻射綠
+		Color fgColor = new Color(0.22f, 1.0f, 0.08f); // Radiant Green
 		Color bgColor = new Color(0, 0, 0);
 
-		// 1. 依透視區塊填寫背景與材質
 		for (int y = 0; y < _height; y++)
 		{
 			for (int x = 0; x < _width; x++)
@@ -114,31 +112,30 @@ public class SceneRenderer
 
 				if (quadrant == "center")
 				{
-					// 中：遠方黑霧通道
-					c = y < 4 ? '▓' : (y < 8 ? '▒' : '░');
+					// Middle horizon path shadows
+					c = y < (_height * 0.16f) ? '%' : (y < (_height * 0.33f) ? '*' : '+');
 					tag = "scene.overlay";
 				}
 				else if (quadrant == "left")
 				{
-					// 左：左側地形
 					c = GetTerrainChar(sd.LeftTerrain, x, y, isLeft: true);
 					tag = "scene.left";
 				}
 				else if (quadrant == "right")
 				{
-					// 右：右側地形 (與左側鏡像)
 					c = GetTerrainChar(sd.RightTerrain, x, y, isLeft: false);
 					tag = "scene.right";
 				}
 				else if (quadrant == "ground")
 				{
-					if (x < 30)
+					float scaleX = _width / 68f;
+					if (x < (30 * scaleX))
 					{
 						string leftGround = GetGroundThemeForTerrain(sd.LeftTerrain);
 						c = GetGroundChar(leftGround, x, y);
 						tag = "scene.left_ground";
 					}
-					else if (x > 38)
+					else if (x > (38 * scaleX))
 					{
 						string rightGround = GetGroundThemeForTerrain(sd.RightTerrain);
 						c = GetGroundChar(rightGround, x, y);
@@ -155,10 +152,8 @@ public class SceneRenderer
 			}
 		}
 
-		// 2. 疊加繪製 3D 透視骨架線
 		DrawPerspectiveLines();
 
-		// 3. 疊加繪製貼圖 (Decals)
 		foreach (var decal in sd.Decals)
 		{
 			DrawFallbackDecal(decal);
@@ -167,34 +162,37 @@ public class SceneRenderer
 
 	private string GetQuadrant(int x, int y)
 	{
-		// 判斷 (x, y) 落在 左、右、下、中 哪一個象限
-		// 消失點大約在 y=11, x在 30~38 之間
+		float scaleX = _width / 68f;
+		float scaleY = _height / 24f;
+		int logicX = (int)Math.Round(x / scaleX);
+		int logicY = (int)Math.Round(y / scaleY);
+
 		bool isCenterPath = false;
-		if (y <= 11)
+		if (logicY <= 11)
 		{
-			float leftBorder = 32f - y * (2f / 11f);
-			float rightBorder = 36f + y * (2f / 11f);
-			if (x >= leftBorder && x <= rightBorder)
+			float leftBorder = 32f - logicY * (2f / 11f);
+			float rightBorder = 36f + logicY * (2f / 11f);
+			if (logicX >= leftBorder && logicX <= rightBorder)
 				isCenterPath = true;
 		}
 		else
 		{
-			if (x >= 30 && x <= 38)
+			if (logicX >= 30 && logicX <= 38)
 				isCenterPath = true;
 		}
 
 		if (isCenterPath) return "center";
 
-		if (x < 30)
+		if (logicX < 30)
 		{
-			float leftLineY = 20f - 0.3f * x;
-			if (y < leftLineY) return "left";
+			float leftLineY = 20f - 0.3f * logicX;
+			if (logicY < leftLineY) return "left";
 			return "ground";
 		}
-		else if (x > 38)
+		else if (logicX > 38)
 		{
-			float rightLineY = 11f + 0.31f * (x - 38);
-			if (y < rightLineY) return "right";
+			float rightLineY = 11f + 0.31f * (logicX - 38);
+			if (logicY < rightLineY) return "right";
 			return "ground";
 		}
 
@@ -203,53 +201,51 @@ public class SceneRenderer
 
 	private char GetTerrainChar(string terrain, int x, int y, bool isLeft)
 	{
-		// 2ch AA 風格的地形填滿字元
+		float scaleX = _width / 68f;
+		float scaleY = _height / 24f;
+		int logicX = (int)Math.Round(x / scaleX);
+		int logicY = (int)Math.Round(y / scaleY);
+
 		var rand = new System.Random(y * _width + x);
 		switch (terrain)
 		{
 			case "woodland":
-				// 樹林：以斜線和直條勾勒樹幹，點代表樹葉
 				if (isLeft)
 				{
-					if (x == 4 || x == 16 || x == 26) return '｜';
-					if ((x == 5 || x == 17) && y % 3 == 0) return '＼';
+					if (logicX == 4 || logicX == 16 || logicX == 26) return '|';
+					if ((logicX == 5 || logicX == 17) && logicY % 3 == 0) return '\\';
 				}
 				else
 				{
-					if (x == 63 || x == 51 || x == 41) return '｜';
-					if ((x == 62 || x == 50) && y % 3 == 0) return '／';
+					if (logicX == 63 || logicX == 51 || logicX == 41) return '|';
+					if ((logicX == 62 || logicX == 50) && logicY % 3 == 0) return '/';
 				}
-				if (rand.NextDouble() < 0.15) return rand.Next(2) == 0 ? '·' : '*';
+				if (rand.NextDouble() < 0.15) return rand.Next(2) == 0 ? '.' : '*';
 				break;
 
 			case "stone_wall":
-				// 石壁/磚牆：繪製水平縫隙
-				if (y % 4 == 0) return '─';
-				if (isLeft && (x + y * 2) % 8 == 0) return '│';
-				if (!isLeft && (x - y * 2) % 8 == 0) return '│';
+				if (logicY % 4 == 0) return '-';
+				if (isLeft && (logicX + logicY * 2) % 8 == 0) return '|';
+				if (!isLeft && (logicX - logicY * 2) % 8 == 0) return '|';
 				break;
 
 			case "cabin":
-				// 小屋壁面：水平原木線條
-				if (y % 2 == 0) return '￣';
+				if (logicY % 2 == 0) return '-';
 				break;
 
 			case "riverside":
-				// 河畔：水平波紋
-				if (y % 3 == 0 && (x + y) % 6 < 2) return '~';
-				if (y % 4 == 1 && (x - y) % 8 < 3) return '≈';
+				if (logicY % 3 == 0 && (logicX + logicY) % 6 < 2) return '~';
+				if (logicY % 4 == 1 && (logicX - logicY) % 8 < 3) return '=';
 				break;
 
 			case "swamp":
-				// 沼澤：散落的蘆葦與水窪
-				if (rand.NextDouble() < 0.1) return '▁';
+				if (rand.NextDouble() < 0.1) return '=';
 				if (rand.NextDouble() < 0.05) return '"';
 				break;
 
 			case "ruins":
-				// 遺跡：斷壁殘垣，部分石塊字元
-				if (x % 12 == 0 && y > 3) return '║';
-				if (rand.NextDouble() < 0.08) return '▧';
+				if (logicX % 12 == 0 && logicY > 3) return '|';
+				if (rand.NextDouble() < 0.08) return '%';
 				break;
 		}
 		return ' ';
@@ -275,17 +271,22 @@ public class SceneRenderer
 
 	private char GetGroundChar(string ground, int x, int y)
 	{
+		float scaleX = _width / 68f;
+		float scaleY = _height / 24f;
+		int logicX = (int)Math.Round(x / scaleX);
+		int logicY = (int)Math.Round(y / scaleY);
+
 		var rand = new System.Random(y * _width + x);
 		switch (ground)
 		{
 			case "grass":
-				if (rand.NextDouble() < 0.12) return rand.Next(2) == 0 ? '"' : '·';
+				if (rand.NextDouble() < 0.12) return rand.Next(2) == 0 ? '"' : '.';
 				break;
 			case "planks":
-				if (x % 6 == 0) return '│';
+				if (logicX % 6 == 0) return '|';
 				break;
 			case "stone_tiles":
-				if (x % 8 == 0 || y % 3 == 0) return '┼';
+				if (logicX % 8 == 0 || logicY % 3 == 0) return '+';
 				break;
 			case "dirt":
 			default:
@@ -299,100 +300,167 @@ public class SceneRenderer
 	{
 		Color color = new Color(0.33f, 0.42f, 0.18f); // 灰綠暗線
 		CharCell cell = new CharCell('\0', color, new Color(0, 0, 0), "scene.overlay");
+		float scaleX = _width / 68f;
+		float scaleY = _height / 24f;
 
-		// 左斜透視線 (0, 20) 到 (30, 11)
-		for (int x = 0; x <= 30; x++)
+		// 1. Left perspective line
+		int startX = 0;
+		int endX = (int)Math.Round(30 * scaleX);
+		for (int x = startX; x <= endX; x++)
 		{
-			int y = (int)Math.Round(20f - 0.3f * x);
-			cell.Character = '＼';
-			_buffer.SetCell(x, y, cell);
+			float t = (float)(x - startX) / (endX - startX);
+			int y = (int)Math.Round((20 * scaleY) * (1 - t) + (11 * scaleY) * t);
+			if (x >= 0 && x < _width && y >= 0 && y < _height)
+			{
+				cell.Character = '\\';
+				_buffer.SetCell(x, y, cell);
+			}
 		}
 
-		// 右斜透視線 (67, 20) 到 (38, 11)
-		for (int x = 38; x < _width; x++)
+		// 2. Right perspective line
+		startX = (int)Math.Round(38 * scaleX);
+		endX = _width - 1;
+		for (int x = startX; x <= endX; x++)
 		{
-			int y = (int)Math.Round(11f + 0.31f * (x - 38));
-			cell.Character = '／';
-			_buffer.SetCell(x, y, cell);
+			float t = (float)(x - startX) / (endX - startX);
+			int y = (int)Math.Round((11 * scaleY) * (1 - t) + (20 * scaleY) * t);
+			if (x >= 0 && x < _width && y >= 0 && y < _height)
+			{
+				cell.Character = '/';
+				_buffer.SetCell(x, y, cell);
+			}
 		}
 
-		// 地平線 (30, 11) 到 (38, 11)
-		for (int x = 30; x <= 38; x++)
+		// 3. Horizon line
+		int startH = (int)Math.Round(30 * scaleX);
+		int endH = (int)Math.Round(38 * scaleX);
+		int horizonY = (int)Math.Round(11 * scaleY);
+		for (int x = startH; x <= endH; x++)
 		{
-			cell.Character = '─';
-			_buffer.SetCell(x, 11, cell);
+			if (x >= 0 && x < _width)
+			{
+				cell.Character = '-';
+				_buffer.SetCell(x, horizonY, cell);
+			}
 		}
 
-		// 左通道壁線
-		for (int y = 0; y <= 11; y++)
+		// 4. Left corridor wall
+		int startY = 0;
+		int endY = (int)Math.Round(11 * scaleY);
+		for (int y = startY; y <= endY; y++)
 		{
-			int x = (int)Math.Round(32f - y * (2f / 11f));
-			cell.Character = '＼';
-			_buffer.SetCell(x, y, cell);
+			float t = (float)(y - startY) / (endY - startY);
+			int x = (int)Math.Round((32 * scaleX) * (1 - t) + (30 * scaleX) * t);
+			if (x >= 0 && x < _width && y >= 0 && y < _height)
+			{
+				cell.Character = '\\';
+				_buffer.SetCell(x, y, cell);
+			}
 		}
 
-		// 右通道壁線
-		for (int y = 0; y <= 11; y++)
+		// 5. Right corridor wall
+		for (int y = startY; y <= endY; y++)
 		{
-			int x = (int)Math.Round(36f + y * (2f / 11f));
-			cell.Character = '／';
-			_buffer.SetCell(x, y, cell);
+			float t = (float)(y - startY) / (endY - startY);
+			int x = (int)Math.Round((36 * scaleX) * (1 - t) + (38 * scaleX) * t);
+			if (x >= 0 && x < _width && y >= 0 && y < _height)
+			{
+				cell.Character = '/';
+				_buffer.SetCell(x, y, cell);
+			}
 		}
 	}
 
 	private void DrawFallbackDecal(string decal)
 	{
-		// 在 C# Fallback 中手繪貼圖，保證 2ch AA 風格
 		Color fg = new Color(0.22f, 1.0f, 0.08f);
 		Color bg = new Color(0, 0, 0);
+		float scaleX = _width / 68f;
+		float scaleY = _height / 24f;
 
 		if (decal.StartsWith("window"))
 		{
-			int startX = decal.EndsWith("left") ? 10 : 54;
-			string[] art = {
-				"┌──┐",
-				"│田│",
-				"└──┘"
+			int logicStartX = decal.EndsWith("left") ? 10 : 54;
+			int startX = (int)Math.Round(logicStartX * scaleX);
+			int startY = (int)Math.Round(6 * scaleY);
+			string[] art = scaleY > 1.5 ? new string[] {
+				"+----+",
+				"|####|",
+				"|####|",
+				"+----+"
+			} : new string[] {
+				"+--+",
+				"|##|",
+				"+--+"
 			};
-			DrawArtAt(art, startX, 6, "scene.center");
+			DrawArtAt(art, startX, startY, "scene.center");
 		}
 		else if (decal.StartsWith("door"))
 		{
-			int startX = decal.EndsWith("left") ? 18 : 46;
-			string[] art = {
-				"┌──┐",
-				"│  │",
-				"│  │",
-				"└──┘"
+			int logicStartX = decal.EndsWith("left") ? 18 : 46;
+			int startX = (int)Math.Round(logicStartX * scaleX);
+			int startY = (int)Math.Round(10 * scaleY);
+			string[] art = scaleY > 1.5 ? new string[] {
+				"+----+",
+				"|    |",
+				"|    |",
+				"|    |",
+				"|    |",
+				"+----+"
+			} : new string[] {
+				"+--+",
+				"|  |",
+				"|  |",
+				"+--+"
 			};
-			DrawArtAt(art, startX, 10, "scene.center");
+			DrawArtAt(art, startX, startY, "scene.center");
 		}
 		else if (decal.StartsWith("sofa"))
 		{
-			int startX = decal.EndsWith("left") ? 8 : 48;
-			string[] art = {
+			int logicStartX = decal.EndsWith("left") ? 8 : 48;
+			int startX = (int)Math.Round(logicStartX * scaleX);
+			int startY = (int)Math.Round(17 * scaleY);
+			string[] art = scaleY > 1.5 ? new string[] {
+				"  __nn__  ",
+				" [______] ",
+				" [______] "
+			} : new string[] {
 				" _n_ ",
 				"[___]"
 			};
-			DrawArtAt(art, startX, 17, "scene.center");
+			DrawArtAt(art, startX, startY, "scene.center");
 		}
-		else if (decal.StartsWith("npc"))
+		else if (decal.StartsWith("npc") || decal.StartsWith("enemy"))
 		{
-			int startX = decal.EndsWith("left") ? 14 : 50;
-			string[] art = {
-				"(o_o)",
-				"/│\\ ",
-				"/ \\ "
+			int logicStartX = decal.EndsWith("left") ? 14 : 50;
+			int startX = (int)Math.Round(logicStartX * scaleX);
+			int startY = (int)Math.Round(12 * scaleY);
+			string[] art = scaleY > 1.5 ? new string[] {
+				"   #####   ",
+				"  #######  ",
+				" ######### ",
+				" ######### ",
+				" ######### ",
+				"  #######  "
+			} : new string[] {
+				"  ###  ",
+				" ##### ",
+				" ##### "
 			};
-			DrawArtAt(art, startX, 12, "scene.center");
+			DrawArtAt(art, startX, startY, "scene.center");
 		}
 		else if (decal.StartsWith("chest"))
 		{
-			int startX = decal.EndsWith("left") ? 12 : 52;
-			string[] art = {
-				"[＝]"
+			int logicStartX = decal.EndsWith("left") ? 12 : 52;
+			int startX = (int)Math.Round(logicStartX * scaleX);
+			int startY = (int)Math.Round(18 * scaleY);
+			string[] art = scaleY > 1.5 ? new string[] {
+				"[====]",
+				"[====]"
+			} : new string[] {
+				"[=]"
 			};
-			DrawArtAt(art, startX, 18, "scene.center");
+			DrawArtAt(art, startX, startY, "scene.center");
 		}
 	}
 

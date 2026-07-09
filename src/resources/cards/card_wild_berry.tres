@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 3
+CardId = 60
+CardName = "野莓"
+Description = "食用後微幅恢復飢餓與理智，但有概率加入「中毒」到牌組中。"
+DexValue = 0
+HpCost = 0
+HungerCost = -3
+MaxUses = 0
+SanityCost = -2
+StrValue = 0
+ThirstCost = 0
+Weight = 0
+WisValue = 0

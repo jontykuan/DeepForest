@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardId = 169
+CardName = "噴火器"
+CardClass = 4
+Weight = 2
+StrValue = 0
+DexValue = 0
+WisValue = 0
+HungerCost = 0
+ThirstCost = 0
+HpCost = 0
+SanityCost = 0
+Description = "裝備。可在與蟲類或某些植物/怪物戰鬥時造成極大傷害。"
+MaxUses = 3

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/cards/Card.cs" id="1_card_script"]
+
+[resource]
+script = ExtResource("1_card_script")
+CardClass = 0
+CardId = 45
+CardName = "新生"
+Description = "拋棄手牌中所有負面效果卡，消耗等同拋棄數量的理智，並恢復拋棄數量/2 (無條件進位) 的體力。"
+DexValue = 0
+HpCost = 0
+HungerCost = 0
+MaxUses = 0
+SanityCost = 1
+StrValue = 0
+ThirstCost = 0
+Weight = 1
+WisValue = 0
