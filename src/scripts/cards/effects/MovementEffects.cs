@@ -21,7 +21,9 @@ namespace DeepForest.Cards.Effects
                 state.AddLog("你成功逃離了戰鬥！");
             }
 
-            state.CurrentDepth += 10;
+            var rand = new Random();
+            int depthGain = rand.Next(2, 6);
+            state.CurrentDepth += depthGain;
             
             var mapManager = context.MapManager;
             var current = mapManager.Nodes[mapManager.CurrentNodeId];
@@ -80,11 +82,17 @@ namespace DeepForest.Cards.Effects
         {
             context.GameState.IsIndoor = false;
             int steps = context.GameState.IndoorDepth;
-            context.GameState.CurrentDepth += steps * 10;
+            var rand = new Random();
+            int depthGain = 0;
+            for (int i = 0; i < steps; i++)
+            {
+                depthGain += rand.Next(2, 6);
+            }
+            context.GameState.CurrentDepth += depthGain;
             int nextNodeId = context.MapManager.GetRandomDownstreamNode(context.GameState.EntranceNodeId, steps);
             context.MapManager.CurrentNodeId = nextNodeId;
             context.MapManager.CurrentIndoorScene = null;
-            return new ActionResult { Success = true, LogMessage = $"你攀爬走出，重見天日！在室內度過了 {steps} 個場景，前進了 {steps * 10} 米深度。" };
+            return new ActionResult { Success = true, LogMessage = $"你攀爬走出，重見天日！在室內度過了 {steps} 個場景，前進了 {depthGain} 米深度。" };
         }
     }
 

@@ -32,5 +32,9 @@ namespace DeepForest.Narrative
         // Custom scene transitions
         [Export] public int NextNodeIdOverride { get; set; } = -1;
         [Export] public string NextIndoorSceneOverride { get; set; } = "";
+
+        // Nested composite additions
+        [Export] public EventCondition? Condition { get; set; }
+        [Export] public EventEffect? Effect { get; set; }
     }
 }

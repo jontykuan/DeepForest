@@ -15,7 +15,7 @@ CHAR_LIST = " .:-=+*%#@@" # Dark to bright
 
 # Default paths
 scenes_dir = r"d:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\assets\ascii_art\scenes"
-font_path = r"d:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\assets\fonts\msgothic.ttc"
+font_path = r"d:\cykuan\Godot_v4.6.2-stable_mono_win64\godot project\DeepForest\assets\fonts\SarasaMonoTC-Regular.ttf"
 
 try:
     font = ImageFont.truetype(font_path, 16)

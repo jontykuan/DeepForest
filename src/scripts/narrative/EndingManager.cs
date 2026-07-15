@@ -54,10 +54,21 @@ namespace DeepForest.Narrative
                 return true;
             }
 
-            // 2. Win Condition (Escape at max depth)
-            if (GameState.Instance.CurrentDepth >= GameConstants.MaxDepth)
+            // 2. Hidden stats threshold check (Brutality, Corruption, Evil >= 90)
+            if (player.Brutality >= 90 || player.Corruption >= 90 || player.Evil >= 90)
             {
-                // First, check hidden stat endings (Threshold >= 90)
+                // First, check if they have escape items for a successful escape ending
+                if (GameState.Instance.CurrentStoryHandler != null)
+                {
+                    var escapeEnding = GameState.Instance.CurrentStoryHandler.CheckEscapeEndings(player, deck);
+                    if (escapeEnding != null)
+                    {
+                        TriggerEnding(EndingType.Escape, escapeEnding.Title, escapeEnding.Description);
+                        return true;
+                    }
+                }
+
+                // If not escaping, trigger the respective hidden stat ending
                 if (GameState.Instance.CurrentStoryHandler != null)
                 {
                     var hiddenStatEnding = GameState.Instance.CurrentStoryHandler.CheckHiddenStatEndings(player, deck);
@@ -76,7 +87,7 @@ namespace DeepForest.Narrative
                 }
                 else
                 {
-                    // Fallback default hidden stat endings (Threshold >= 90)
+                    // Fallback default hidden stat endings
                     if (player.Brutality >= 90)
                     {
                         TriggerEnding(EndingType.BrutalityEnding, "暴戾結局：林間捕食者", "你徹底被暴力支配，不再尋求逃離。你融為森林的一部分，成為在黑暗中巡狩、撕裂一切生靈的怪物。");
@@ -93,22 +104,6 @@ namespace DeepForest.Narrative
                         return true;
                     }
                 }
-
-                // If no hidden stat endings triggered, check standard escape endings
-                if (GameState.Instance.CurrentStoryHandler != null)
-                {
-                    var escapeEnding = GameState.Instance.CurrentStoryHandler.CheckEscapeEndings(player, deck);
-                    if (escapeEnding != null)
-                    {
-                        TriggerEnding(EndingType.Escape, escapeEnding.Title, escapeEnding.Description);
-                        return true;
-                    }
-                }
-
-                // Default fallback escape ending
-                TriggerEnding(EndingType.Escape, "順利逃出：破霧重圓", 
-                    "你穿過了最後一片迷霧，重新看見了人類世界的曙光。你逃出來了。");
-                return true;
             }
 
             return false;

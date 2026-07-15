@@ -39,7 +39,8 @@ public enum ActionEffectType
     FindDogInspect,
     FindDogEmbrace,
     UsePliersToRemoveCollar,
-    LeoCraft
+    LeoCraft,
+    SearchCampStart
 }
 
 public enum ThresholdType
@@ -48,7 +49,8 @@ public enum ThresholdType
     Str,
     Dex,
     Wis,
-    Any
+    Any,
+    StrOrWis
 }
 
 [GlobalClass]

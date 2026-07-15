@@ -33,6 +33,15 @@ namespace DeepForest.Cards
                 || deck.EquippedCards.Any(c => c.EffectTags.HasFlag(tag));
         }
 
+        public static Card? FindCardAnywhere(Deck deck, CardEffectTag tag)
+        {
+            if (deck == null) return null;
+            return deck.DrawPile.FirstOrDefault(c => c.EffectTags.HasFlag(tag))
+                ?? deck.Hand.FirstOrDefault(c => c.EffectTags.HasFlag(tag))
+                ?? deck.DiscardPile.FirstOrDefault(c => c.EffectTags.HasFlag(tag))
+                ?? deck.EquippedCards.FirstOrDefault(c => c.EffectTags.HasFlag(tag));
+        }
+
         public static Card? FindCardAnywhere(Deck deck, CardId id)
         {
             if (deck == null) return null;

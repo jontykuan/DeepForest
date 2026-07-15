@@ -14,4 +14,5 @@ public partial class SceneData : Resource
     [Export] public string LeftTerrain { get; set; } = "woodland";
     [Export] public string RightTerrain { get; set; } = "woodland";
     [Export] public Godot.Collections.Array<string> Decals { get; set; } = new();
+    [Export] public bool IsForwardBlocked { get; set; } = false;
 }

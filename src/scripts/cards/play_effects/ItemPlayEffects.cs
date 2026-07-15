@@ -430,4 +430,22 @@ namespace DeepForest.Cards.Effects
             return CardPlayHandler.PlayResult.Success;
         }
     }
+
+    [CardPlayEffect("成癮")]
+    public class AddictionPlayEffect : ICardPlayEffect
+    {
+        public bool CanPlay(Card card, Player player, Deck deck, out string message)
+        {
+            message = "";
+            return true;
+        }
+
+        public CardPlayHandler.PlayResult Execute(Card card, Player player, Deck deck, out string message)
+        {
+            deck.DiscardCard(card);
+            player.CurrentSanity = Math.Max(0, player.CurrentSanity - 2);
+            message = "你克制了體內的渴求，理智受損（理智 -2）。";
+            return CardPlayHandler.PlayResult.Success;
+        }
+    }
 }

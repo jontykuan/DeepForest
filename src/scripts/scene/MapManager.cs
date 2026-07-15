@@ -23,6 +23,7 @@ namespace DeepForest.Scene
             {
                 _currentNodeId = value;
                 ExploredNodeIds.Add(_currentNodeId);
+                MapGenerator.EnsureNodeConnections(this, _currentNodeId);
                 SceneEventHandler.OnPlayerEnterNode(_currentNodeId);
             }
         }
@@ -50,6 +51,7 @@ namespace DeepForest.Scene
             MapGenerator.GenerateMap(Nodes, out int currentNodeId);
             _currentNodeId = currentNodeId;
             ExploredNodeIds.Add(_currentNodeId);
+            MapGenerator.EnsureNodeConnections(this, _currentNodeId);
         }
 
         public SceneData GenerateIndoorScene(int depth)
@@ -134,10 +136,18 @@ namespace DeepForest.Scene
 
             for (int i = 0; i < steps; i++)
             {
-                if (Nodes.TryGetValue(currentId, out var node) && node.Connections.Count > 0)
+                if (Nodes.TryGetValue(currentId, out var node))
                 {
-                    int nextIdx = rand.Next(node.Connections.Count);
-                    currentId = node.Connections[nextIdx];
+                    MapGenerator.EnsureNodeConnections(this, currentId);
+                    if (node.Connections.Count > 0)
+                    {
+                        int nextIdx = rand.Next(node.Connections.Count);
+                        currentId = node.Connections[nextIdx];
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
                 else
                 {

@@ -36,6 +36,7 @@ public partial class GameState : Node
     public Deck DeckInstance { get; set; } = new();
     public EndingManager EndingManagerInstance { get; set; } = new();
     public StoryUnlock StoryUnlockInstance { get; set; } = new();
+    public ActionLogger Logger { get; set; } = new();
     private ICharacterStoryHandler _currentStoryHandler = new DeepForest.Narrative.Handlers.DefaultStoryHandler();
     public ICharacterStoryHandler CurrentStoryHandler
     {
@@ -94,7 +95,7 @@ public partial class GameState : Node
         get => _currentDepth;
         set 
         { 
-            _currentDepth = value; 
+            _currentDepth = Math.Max(0, value); 
             EmitSignal(SignalName.DepthChanged, _currentDepth); 
         }
     }

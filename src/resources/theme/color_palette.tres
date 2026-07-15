@@ -4,9 +4,13 @@
 
 [resource]
 script = ExtResource("1_script")
-RadiantGreen = Color(0.22, 1, 0.08, 1)
-BloodRed = Color(1, 0, 0.2, 1)
+RadiantGreen = Color(0.223529, 1, 0.0784314, 1)
+BloodRed = Color(1, 0.133333, 0.133333, 1)
 DarkRed = Color(0.4, 0, 0, 1)
 DarkBlue = Color(0, 0, 0.4, 1)
-SilentWhite = Color(0.9, 0.9, 0.9, 1)
-SoftGray = Color(0.5, 0.5, 0.5, 1)
+SilentWhite = Color(1, 1, 1, 1)
+BrightBlue = Color(0, 0.74902, 1, 1)
+GrayGreen = Color(0.333333, 0.419608, 0.184314, 1)
+AmberWarning = Color(1, 0.690196, 0, 1)
+PaleGray = Color(0.752941, 0.752941, 0.752941, 1)
+SoftGray = Color(0.501961, 0.501961, 0.501961, 1)

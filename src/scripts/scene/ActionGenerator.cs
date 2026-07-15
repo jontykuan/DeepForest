@@ -15,18 +15,12 @@ namespace DeepForest.Scene
 
             if (nodeId == 0)
             {
-                sd.Actions.Add(new SceneAction { ActionName = "紮營", ThresholdType = ThresholdType.Str, ThresholdValue = 2, EffectType = ActionEffectType.Camp });
+                sd.Actions.Add(new SceneAction { ActionName = "搜索營地", ThresholdType = ThresholdType.StrOrWis, ThresholdValue = 2, EffectType = ActionEffectType.SearchCampStart });
                 sd.Actions.Add(new SceneAction { ActionName = "前進", ThresholdType = ThresholdType.Dex, ThresholdValue = 2, EffectType = ActionEffectType.MoveForward });
                 return;
             }
 
             var mapManager = MapManager.Instance;
-            bool isExit = (nodeId == mapManager.Nodes.Count - 1);
-            if (isExit && nodeId != -1)
-            {
-                sd.Actions.Add(new SceneAction { ActionName = "逃離森林", RequiredItem = "", EffectType = ActionEffectType.MoveForward });
-                return;
-            }
 
             AddTerrainActions(sd, sd.LeftTerrain, "左側");
             AddTerrainActions(sd, sd.RightTerrain, "右側");
@@ -88,7 +82,7 @@ namespace DeepForest.Scene
                 var sortedConns = node.Connections.OrderBy(id => mapManager.Nodes[id].X).ToList();
                 if (sortedConns.Count == 1)
                 {
-                    if (!HasActionName(sd, "前進"))
+                    if (!sd.IsForwardBlocked && !HasActionName(sd, "前進"))
                         sd.Actions.Add(new SceneAction { ActionName = "前進", ThresholdType = ThresholdType.Dex, ThresholdValue = 2, EffectType = ActionEffectType.MoveForward });
                 }
                 else if (sortedConns.Count == 2)
@@ -113,7 +107,7 @@ namespace DeepForest.Scene
                             sd.Actions.Add(new SceneAction { ActionName = actionName, ThresholdType = tt, ThresholdValue = tv, EffectType = ActionEffectType.MoveForward });
                     }
 
-                    if (!leftPassable && !rightPassable)
+                    if (!leftPassable && !rightPassable && !sd.IsForwardBlocked)
                     {
                         if (!HasActionName(sd, "前進"))
                             sd.Actions.Add(new SceneAction { ActionName = "前進", ThresholdType = ThresholdType.Dex, ThresholdValue = 2, EffectType = ActionEffectType.MoveForward });
@@ -133,7 +127,7 @@ namespace DeepForest.Scene
                             sd.Actions.Add(new SceneAction { ActionName = actionName, ThresholdType = tt, ThresholdValue = tv, EffectType = ActionEffectType.MoveForward });
                     }
 
-                    if (!HasActionName(sd, "前進"))
+                    if (!sd.IsForwardBlocked && !HasActionName(sd, "前進"))
                         sd.Actions.Add(new SceneAction { ActionName = "前進", ThresholdType = ThresholdType.Dex, ThresholdValue = 2, EffectType = ActionEffectType.MoveForward });
 
                     if (rightPassable)
@@ -148,13 +142,13 @@ namespace DeepForest.Scene
             }
             else
             {
-                if (!HasActionName(sd, "前進"))
+                if (!sd.IsForwardBlocked && !HasActionName(sd, "前進"))
                     sd.Actions.Add(new SceneAction { ActionName = "前進", ThresholdType = ThresholdType.Dex, ThresholdValue = 2, EffectType = ActionEffectType.MoveForward });
             }
 
             bool canCamp = !GameState.Instance.IsDescentActive || sd.Decals.Contains("campfire");
 
-            if (nodeId != 0 && !isExit && canCamp)
+            if (nodeId != 0 && canCamp)
             {
                 if (!HasActionName(sd, "就地歇息"))
                 {
@@ -167,6 +161,11 @@ namespace DeepForest.Scene
             {
                 foreach (var option in EventManager.CurrentActiveEvent.Options)
                 {
+                    if (option.Condition != null && !option.Condition.Evaluate(GameState.Instance.PlayerInstance, GameState.Instance.DeckInstance))
+                    {
+                        continue;
+                    }
+
                     if (!HasActionName(sd, option.OptionText))
                     {
                         sd.Actions.Add(new SceneAction
@@ -197,10 +196,9 @@ namespace DeepForest.Scene
                 }
             }
 
-            // Leo craft check
             if (GameState.Instance.PlayerInstance?.CharacterData?.CharacterId == DeepForest.Character.CharacterId.Leo)
             {
-                bool hasCampOption = HasActionName(sd, "紮營") || HasActionName(sd, "就地歇息") || sd.Decals.Contains("campfire");
+                bool hasCampOption = HasActionName(sd, "紮營") || HasActionName(sd, "就地歇息") || sd.Decals.Any(d => d.Contains("campfire") || d.Contains("tent"));
                 if (hasCampOption)
                 {
                     if (CardQueryHelper.HasCardAnywhere(deck, CardId.ConsumableRepellent) && 
@@ -231,7 +229,7 @@ namespace DeepForest.Scene
                     if (!HasActionName(sd, "捕魚"))
                         sd.Actions.Add(new SceneAction { ActionName = "捕魚", ThresholdType = ThresholdType.Dex, ThresholdValue = 3, EffectType = ActionEffectType.Fish });
                     if (!HasActionName(sd, "裝水"))
-                        sd.Actions.Add(new SceneAction { ActionName = "裝水", RequiredItem = "水瓶", EffectType = ActionEffectType.CollectWater });
+                        sd.Actions.Add(new SceneAction { ActionName = "裝水", RequiredItem = "容器", EffectType = ActionEffectType.CollectWater });
                     break;
                 case "cabin":
                     if (canCamp && !HasActionName(sd, "紮營"))

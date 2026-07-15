@@ -61,12 +61,6 @@ namespace DeepForest.UI
                 return PlayResult.InvalidCard;
             }
 
-            if (card.CardType == CardType.KeyItem)
-            {
-                message = $"【物品】這是重要劇情物品【{card.CardName}】，無法直接打出。";
-                return PlayResult.InvalidCard;
-            }
-
             // 2. 穢祟詛咒驅除檢驗
             if (card.CardId == CardId.InjuryPossession || card.EffectTags.HasFlag(CardEffectTag.Corruption))
             {
@@ -78,6 +72,7 @@ namespace DeepForest.UI
                 player.CurrentSanity -= 15;
                 deck.Hand.Remove(card); 
                 message = $"你忍受著劇烈精神痛苦，消耗了 15 點理智，永久驅散了【{card.CardName}】！";
+                GameState.Instance.Logger.LogAction("CardPurged", new Dictionary<string, object> { { "cardId", card.CardId.ToString() }, { "cardName", card.CardName } });
                 return PlayResult.CursePurged;
             }
 
@@ -88,6 +83,7 @@ namespace DeepForest.UI
                 {
                     CombatManager.Instance.AddCardToCombatZone(card);
                     message = $"打出屬性卡【{card.CardName}】放入對決區。";
+                    GameState.Instance.Logger.LogAction("CardPlayed", new Dictionary<string, object> { { "cardId", card.CardId.ToString() }, { "cardName", card.CardName }, { "zone", "CombatZone" } });
                     return PlayResult.CombatZoneAdded;
                 }
             }
@@ -144,6 +140,7 @@ namespace DeepForest.UI
 
                 deck.UnequipCard(parentCard, card);
                 message = $"卸下了裝備【{parentCard.CardName}】。原卡已回到手牌，卸載卡已銷毀。";
+                GameState.Instance.Logger.LogAction("CardUnequipped", new Dictionary<string, object> { { "cardId", parentCard.CardId.ToString() }, { "cardName", parentCard.CardName } });
                 return PlayResult.Unequipped;
             }
 
@@ -173,6 +170,12 @@ namespace DeepForest.UI
             if (card.CorruptionChange != 0) player.Corruption = Math.Clamp(player.Corruption + card.CorruptionChange, 0, 100);
             if (card.EvilChange != 0) player.Evil = Math.Clamp(player.Evil + card.EvilChange, 0, 100);
 
+            // 8.5 執行資料驅動的 PlayEffect (若是資料化定義卡牌效果)
+            if (card.PlayEffect != null)
+            {
+                card.PlayEffect.Execute(player, deck);
+            }
+
             // 9. 執行特定卡牌 Strategy (若有註冊)
             if (strategy != null)
             {
@@ -195,6 +198,7 @@ namespace DeepForest.UI
                         deck.Hand.Remove(card); 
                         message = $"使用了【{card.CardName}】，此物品已完全耗盡！";
                     }
+                    GameState.Instance.Logger.LogAction("CardPlayed", new Dictionary<string, object> { { "cardId", card.CardId.ToString() }, { "cardName", card.CardName } });
                     return PlayResult.Success;
                 }
             }
@@ -303,6 +307,8 @@ namespace DeepForest.UI
                 message = $"打出了 {card.CardName}。力量+{str}，靈巧+{card.DexValue}，智慧+{card.WisValue}。";
             }
 
+            string actType = card.CardType == CardType.Equipment ? "CardEquipped" : "CardPlayed";
+            GameState.Instance.Logger.LogAction(actType, new Dictionary<string, object> { { "cardId", card.CardId.ToString() }, { "cardName", card.CardName } });
             return PlayResult.Success;
         }
     }

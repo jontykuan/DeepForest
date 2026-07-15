@@ -5,12 +5,14 @@ using System.Linq;
 using DeepForest.Cards;
 using DeepForest.Core;
 using DeepForest.Scene;
+using ColorPalette = DeepForest.Core.ColorPalette;
 
 namespace DeepForest.UI
 {
     public class ActionPanel
     {
         private readonly VBoxContainer _actionList;
+        public List<SceneAction> ActiveActions { get; private set; } = new();
 
         public ActionPanel(VBoxContainer actionList)
         {
@@ -19,6 +21,7 @@ namespace DeepForest.UI
 
         public void UpdateActions(Action<SceneAction> onActionSelected)
         {
+            ActiveActions.Clear();
             if (_actionList == null) return;
 
             foreach (Node child in _actionList.GetChildren())
@@ -81,10 +84,20 @@ namespace DeepForest.UI
                 activeActions.AddRange(sceneData.Actions);
             }
 
-            Label descLabel = new Label();
-            descLabel.Text = $"{sceneName}\n{sceneDescription}\n\n[ 可執行行動 ]：";
+            var cp = ColorPalette.Instance;
+
+            RichTextLabel descLabel = new RichTextLabel();
+            descLabel.BbcodeEnabled = true;
+            descLabel.FitContent = true;
+            descLabel.ScrollActive = false;
             descLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             descLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+
+            string titleHex = cp.SilentWhite.ToHtml(false);
+            string descHex = cp.PaleGray.ToHtml(false);
+            string greenHex = cp.RadiantGreen.ToHtml(false);
+
+            descLabel.Text = $"[color=#{titleHex}]{sceneName}[/color]\n[color=#{descHex}]{sceneDescription}[/color]\n\n[color=#{greenHex}][ 可執行行動 ]：[/color]";
             _actionList.AddChild(descLabel);
 
             foreach (var action in activeActions)
@@ -95,18 +108,18 @@ namespace DeepForest.UI
                 
                 bool available = IsActionAvailable(action, out string state);
                 
-                if (state == "Available")
+                if (state == "Available" || state == "ForceAvailable")
                 {
-                    actionButton.Modulate = new Color(0.22f, 1.0f, 0.08f); 
+                    actionButton.Modulate = cp.RadiantGreen; 
                 }
                 else if (state == "InsufficientPoints")
                 {
-                    actionButton.Modulate = new Color(0.33f, 0.42f, 0.18f); 
+                    actionButton.Modulate = cp.GrayGreen; 
                     actionButton.Disabled = true;
                 }
                 else 
                 {
-                    actionButton.Modulate = new Color(1.0f, 0.13f, 0.13f); 
+                    actionButton.Modulate = cp.BloodRed; 
                     actionButton.Disabled = true;
                 }
 
@@ -114,6 +127,7 @@ namespace DeepForest.UI
                 row.AddChild(actionButton);
                 _actionList.AddChild(row);
             }
+            ActiveActions = activeActions;
         }
 
         private string GetActionLabelText(SceneAction action)
@@ -137,6 +151,7 @@ namespace DeepForest.UI
                 ThresholdType.Dex => $"[靈巧 {TurnManager.Instance.AccumulatedDex}/{req}]",
                 ThresholdType.Wis => $"[智慧 {TurnManager.Instance.AccumulatedWis}/{action.ThresholdValue}]",
                 ThresholdType.Any => $"[行動 {TurnManager.Instance.AccumulatedStr + TurnManager.Instance.AccumulatedDex + TurnManager.Instance.AccumulatedWis}/{action.ThresholdValue}]",
+                ThresholdType.StrOrWis => $"[力量/智慧 {Math.Max(TurnManager.Instance.AccumulatedStr, TurnManager.Instance.AccumulatedWis)}/{action.ThresholdValue}]",
                 _ => ""
             };
 
@@ -146,6 +161,7 @@ namespace DeepForest.UI
                 ThresholdType.Dex => TurnManager.Instance.AccumulatedDex,
                 ThresholdType.Wis => TurnManager.Instance.AccumulatedWis,
                 ThresholdType.Any => TurnManager.Instance.AccumulatedStr + TurnManager.Instance.AccumulatedDex + TurnManager.Instance.AccumulatedWis,
+                ThresholdType.StrOrWis => Math.Max(TurnManager.Instance.AccumulatedStr, TurnManager.Instance.AccumulatedWis),
                 _ => 0
             };
 
@@ -203,7 +219,11 @@ namespace DeepForest.UI
             if (!string.IsNullOrEmpty(action.RequiredItem))
             {
                 bool hasItem = false;
-                if (Enum.TryParse<CardId>(action.RequiredItem, out var reqCardId))
+                if (action.RequiredItem == "容器" || action.RequiredItem == "container")
+                {
+                    hasItem = CardQueryHelper.HasCardAnywhere(GameState.Instance.DeckInstance, CardEffectTag.Container);
+                }
+                else if (Enum.TryParse<CardId>(action.RequiredItem, out var reqCardId))
                 {
                     hasItem = CardQueryHelper.HasCardAnywhere(GameState.Instance.DeckInstance, reqCardId);
                 }
@@ -225,6 +245,7 @@ namespace DeepForest.UI
                 ThresholdType.Dex => TurnManager.Instance.AccumulatedDex,
                 ThresholdType.Wis => TurnManager.Instance.AccumulatedWis,
                 ThresholdType.Any => TurnManager.Instance.AccumulatedStr + TurnManager.Instance.AccumulatedDex + TurnManager.Instance.AccumulatedWis,
+                ThresholdType.StrOrWis => Math.Max(TurnManager.Instance.AccumulatedStr, TurnManager.Instance.AccumulatedWis),
                 _ => 0
             };
 

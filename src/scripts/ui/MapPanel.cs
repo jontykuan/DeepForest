@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using DeepForest.Rendering;
+using DeepForest.Scene;
 
 namespace DeepForest.UI
 {
@@ -13,10 +14,10 @@ namespace DeepForest.UI
             _mapLabel = mapLabel;
         }
 
-        public void UpdateMap(MapRenderer renderer, int currentNodeId, HashSet<int> exploredNodeIds)
+        public void UpdateMap(MapRenderer renderer, int currentNodeId, HashSet<int> exploredNodeIds, List<SceneAction>? activeActions = null)
         {
             if (_mapLabel == null) return;
-            var mapGrid = renderer.RenderMap(currentNodeId, exploredNodeIds);
+            var mapGrid = renderer.RenderMap(currentNodeId, exploredNodeIds, activeActions);
             _mapLabel.Text = mapGrid.ToBBCode();
         }
     }

@@ -270,23 +270,9 @@ public partial class TurnManager : Node
                     DeepForest.Narrative.EventManager.HandleNpcEncounter(player, deck, "Celin");
                 }
             }
-
-            // 3. Addiction check: if CurseAddiction is in hand during day change, add another one
-            int addictionInHand = deck.Hand.Count(c => c.CardId == CardId.CurseAddiction);
-            if (addictionInHand > 0)
-            {
-                for (int i = 0; i < addictionInHand; i++)
-                {
-                    Card addictionCard = CardFactory.CreateCard(CardId.CurseAddiction);
-                    if (addictionCard != null)
-                    {
-                        deck.AddCardToDiscardPile(addictionCard);
-                    }
-                }
-                GameState.Instance.AddLog($"【毒癮發作】手牌中的 {addictionInHand} 張【成癮】產生了啃食，額外將 {addictionInHand} 張【成癮】卡加入了棄牌堆。");
-            }
         }
 
+        GameState.Instance.Logger.LogAction("DayChanged", new Dictionary<string, object> { { "newDay", GameState.Instance.CurrentDay } });
         SessionSaveSystem.SaveSession(GameState.Instance, MapManager.Instance);
     }
 }

@@ -24,14 +24,14 @@ namespace DeepForest.Cards.Effects
     [ActionEffect(ActionEffectType.CollectWater)]
     public class CollectWaterEffect : IActionEffect
     {
-        public bool CanExecute(ActionContext context) => CardQueryHelper.HasCardAnywhere(context.Deck, CardId.EmptyWaterFlask);
+        public bool CanExecute(ActionContext context) => CardQueryHelper.HasCardAnywhere(context.Deck, CardEffectTag.Container);
         public ActionResult Execute(ActionContext context)
         {
             var deck = context.Deck;
-            var emptyBottle = CardQueryHelper.FindCardAnywhere(deck, CardId.EmptyWaterFlask);
+            var emptyBottle = CardQueryHelper.FindCardAnywhere(deck, CardEffectTag.Container);
             if (emptyBottle == null)
             {
-                return new ActionResult { Success = false, LogMessage = "你沒有空瓶，無法裝水！" };
+                return new ActionResult { Success = false, LogMessage = "你沒有容器，無法裝水！" };
             }
 
             // Remove empty bottle from deck
@@ -47,12 +47,12 @@ namespace DeepForest.Cards.Effects
             if (deck.AddCardToDiscardPile(rawWater))
             {
                 ActionGenerator.RemoveActionFromCurrentScene("裝水");
-                return new ActionResult { Success = true, LogMessage = "你將空瓶灌滿了河水，獲得了【生水】放入背包。" };
+                return new ActionResult { Success = true, LogMessage = $"你將【{emptyBottle.CardName}】灌滿了河水，獲得了【生水】放入背包。" };
             }
             else
             {
                 deck.AddCardToDiscardPile(emptyBottle);
-                return new ActionResult { Success = false, LogMessage = "【過重】你的背包負重不足以容納裝滿水後的【生水】（重量 5），無法裝水！" };
+                return new ActionResult { Success = false, LogMessage = $"【過重】你的背包負重不足以容納裝滿水後的【生水】（重量 5），無法將【{emptyBottle.CardName}】裝水！" };
             }
         }
     }
@@ -228,6 +228,21 @@ namespace DeepForest.Cards.Effects
 
             string msg = "你消耗了【鐵鉗】，強行剪斷並破壞了緊扣在脖子上的【傑利的項圈】！項圈已被銷毀。";
             ActionGenerator.RemoveActionFromCurrentScene("使用鐵鉗剪斷項圈");
+            return new ActionResult { Success = true, LogMessage = msg };
+        }
+    }
+
+    [ActionEffect(ActionEffectType.SearchCampStart)]
+    public class SearchCampStartEffect : IActionEffect
+    {
+        public bool CanExecute(ActionContext context) => true;
+        public ActionResult Execute(ActionContext context)
+        {
+            int initialHandCount = context.Deck.Hand.Count;
+            context.Deck.DrawCards(2);
+            int drawn = context.Deck.Hand.Count - initialHandCount;
+            string msg = $"你仔細搜索了營地周圍，抽了 {drawn} 張牌。";
+            ActionGenerator.RemoveActionFromCurrentScene(context.SourceAction.ActionName);
             return new ActionResult { Success = true, LogMessage = msg };
         }
     }

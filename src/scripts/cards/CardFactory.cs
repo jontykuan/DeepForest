@@ -71,6 +71,7 @@ namespace DeepForest.Cards
                 // Injuries
                 CardId.InjuryCut => "res://src/resources/cards/card_cut.tres",
                 CardId.InjuryFatigue => "res://src/resources/cards/card_fatigue.tres",
+                CardId.CurseAddiction => "res://src/resources/cards/card_addiction.tres",
 
                 // Keys / Items
                 CardId.KeyAllianceResolve => "res://src/resources/cards/item_alliance_resolve.tres",
@@ -283,8 +284,14 @@ namespace DeepForest.Cards
                     card.EffectTags |= CardEffectTag.Armor;
                     break;
                 case CardId.EquipmentWaterFlask:
+                    card.EffectTags |= CardEffectTag.Tool;
+                    break;
                 case CardId.EmptyWaterFlask:
                     card.EffectTags |= CardEffectTag.Tool;
+                    card.EffectTags |= CardEffectTag.Container;
+                    break;
+                case CardId.EmptyBottle:
+                    card.EffectTags |= CardEffectTag.Container;
                     break;
                 case CardId.EquipmentTorch:
                     card.EffectTags |= CardEffectTag.Light;
@@ -299,7 +306,7 @@ namespace DeepForest.Cards
                 case CardId.KeyEmptyPillBottle:
                     return CreateKeyItemCard(id, "空藥瓶", "空藥瓶。");
                 case CardId.CurseAddiction:
-                    return CreateCurseCard(id, "成癮", "成癮。");
+                    return CreateCurseCard(id, "成癮", "打出時理智-2，進入棄牌堆；當在手牌中時切換場景，就加入1張「成癮」到棄牌堆中。");
                 case CardId.InjuryCut:
                     return CreateInjuryCard(id, "割痕", "割痕。");
                 case CardId.InjuryFatigue:

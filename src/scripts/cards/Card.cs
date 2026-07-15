@@ -78,4 +78,6 @@ public partial class Card : Resource
 
     public string DisplayName => (MaxUses > 0) ? $"{CardName}({UsesLeft}/{MaxUses})" : CardName;
     public string DisplayDescription => (MaxUses > 0) ? $"{Description}\n[剩餘使用次數: {UsesLeft}/{MaxUses}]" : Description;
+
+    [Export] public Narrative.EventEffect? PlayEffect { get; set; }
 }

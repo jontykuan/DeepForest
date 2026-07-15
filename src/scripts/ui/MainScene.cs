@@ -1,13 +1,15 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using DeepForest.Core;
-using DeepForest.Cards;
 using DeepForest.Character;
+using DeepForest.Cards;
+using DeepForest.Core;
 using DeepForest.Scene;
-using DeepForest.Rendering;
 using DeepForest.Combat;
+using DeepForest.Narrative;
 using DeepForest.Cards.Effects;
+using DeepForest.Rendering;
+using ColorPalette = DeepForest.Core.ColorPalette;
 
 namespace DeepForest.UI;
 
@@ -15,7 +17,7 @@ public partial class MainScene : Control
 {
 	private RichTextLabel _statsLabel = null!;
 	private RichTextLabel _mapLabel = null!;
-	private Label _systemBannerLabel = null!;
+	private RichTextLabel _systemBannerLabel = null!;
 	private VBoxContainer _actionList = null!;
 	private HBoxContainer _handContainer = null!;
 	private TextureRect _avatarTexture = null!;
@@ -46,7 +48,7 @@ public partial class MainScene : Control
 	{
 		_statsLabel = GetNode<RichTextLabel>("StatsPanel/StatsLabel");
 		_mapLabel = GetNode<RichTextLabel>("MapPanel/MapLabel");
-		_systemBannerLabel = GetNode<Label>("SystemBanner/BannerLabel");
+		_systemBannerLabel = GetNode<RichTextLabel>("SystemBanner/BannerLabel");
 		_actionList = GetNode<VBoxContainer>("CenterViewport/ActionPanel/ActionScroll/ActionList");
 		_handContainer = GetNode<HBoxContainer>("HandUI/HandList");
 		_avatarTexture = GetNode<TextureRect>("AvatarPanel/AvatarTexture");
@@ -62,7 +64,7 @@ public partial class MainScene : Control
 		_itemLabel = GetNode<RichTextLabel>("ItemsPanel/ItemLabel");
 
 		_sceneRenderer = new SceneRenderer(136, 48);
-		_mapRenderer = new MapRenderer(30, 12);
+		_mapRenderer = new MapRenderer(30, 16);
 
 		// Initialize wrapper classes
 		_handUI = new HandUI(_handContainer, PlayCard, DiscardCardFromHand);
@@ -270,7 +272,7 @@ public partial class MainScene : Control
 
 	private void UpdateMap()
 	{
-		_mapPanel.UpdateMap(_mapRenderer, MapManager.Instance.CurrentNodeId, MapManager.Instance.ExploredNodeIds);
+		_mapPanel.UpdateMap(_mapRenderer, MapManager.Instance.CurrentNodeId, MapManager.Instance.ExploredNodeIds, _actionPanel?.ActiveActions);
 	}
 
 	private void UpdateSystemBanner(string customLog = "")
@@ -454,6 +456,32 @@ public partial class MainScene : Control
 		if (result.Success)
 		{
 			GameState.Instance.AddLog(result.LogMessage);
+
+			bool isSceneTransition = action.TargetNodeId >= 0 || 
+									 action.EffectType == ActionEffectType.MoveForward ||
+									 action.EffectType == ActionEffectType.ExploreIndoor ||
+									 action.EffectType == ActionEffectType.LeaveIndoor ||
+									 action.EffectType == ActionEffectType.ReturnOutdoor ||
+									 action.EffectType == ActionEffectType.EnterNormalCabin ||
+									 action.EffectType == ActionEffectType.EnterStrangeCabin ||
+									 action.EffectType == ActionEffectType.EnterCave;
+
+			if (isSceneTransition)
+			{
+				int addictionInHand = context.Deck.Hand.Count(c => c.CardId == CardId.CurseAddiction);
+				if (addictionInHand > 0)
+				{
+					for (int i = 0; i < addictionInHand; i++)
+					{
+						Card addictionCard = CardFactory.CreateCard(CardId.CurseAddiction);
+						if (addictionCard != null)
+						{
+							context.Deck.AddCardToDiscardPile(addictionCard);
+						}
+					}
+					GameState.Instance.AddLog($"【毒癮發作】手牌中的 {addictionInHand} 張【成癮】在你移動（切換場景）時發作，將 {addictionInHand} 張【成癮】卡加入了棄牌堆。");
+				}
+			}
 		}
 
 		if (action.EffectType == ActionEffectType.MoveForward)
@@ -472,8 +500,8 @@ public partial class MainScene : Control
 		TurnManager.Instance.AccumulatedWis = 0;
 
 		UpdateHUD();
-		UpdateMap();
 		UpdateActionsList();
+		UpdateMap();
 		UpdateSceneAndAvatar();
 		
 		if (GameState.Instance.EndingManagerInstance.CheckEndGameConditions())
@@ -496,19 +524,35 @@ public partial class MainScene : Control
 			child.QueueFree();
 		}
 
-		Label endingLabel = new Label();
-		endingLabel.Text = $"【 遊戲結束 │ {title} 】\n\n{description}\n\n[ 反覆遊玩以解鎖角色所有的背景故事 ]";
-		endingLabel.Modulate = new Color(1.0f, 0.13f, 0.13f);
+		var cp = ColorPalette.Instance;
+		RichTextLabel endingLabel = new RichTextLabel();
+		endingLabel.BbcodeEnabled = true;
+		endingLabel.FitContent = true;
+		endingLabel.ScrollActive = false;
 		endingLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 		endingLabel.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		endingLabel.AddThemeFontOverride("font", GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font"));
+
+		string bloodRedHex = cp.BloodRed.ToHtml(false);
+		string whiteHex = cp.SilentWhite.ToHtml(false);
+		string grayHex = cp.PaleGray.ToHtml(false);
+
+		endingLabel.Text = $"[center][font_size=20][color=#{bloodRedHex}]【 遊戲結束 】[/color][/font_size]\n" +
+						   $"[font_size=16][color=#{whiteHex}]{title}[/color][/font_size]\n\n" +
+						   $"[color=#{grayHex}]{description}[/color]\n\n" +
+						   $"[color=#{grayHex}][ 反覆遊玩以解鎖角色所有的背景故事 ][/color][/center]";
+		
 		_actionList.AddChild(endingLabel);
+		
+		endingLabel.Modulate = new Color(1, 1, 1, 0);
+		var fadeTween = endingLabel.CreateTween();
+		fadeTween.TweenProperty(endingLabel, "modulate:a", 1.0f, 1.2f)
+				 .SetTrans(Tween.TransitionType.Quad)
+				 .SetEase(Tween.EaseType.Out);
 
 		// Back to Main Menu Button
 		Button backToMenuBtn = new Button();
 		backToMenuBtn.Text = "▶ 返回主選單";
-		backToMenuBtn.AddThemeFontOverride("font", GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font"));
-		backToMenuBtn.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		backToMenuBtn.Modulate = ColorPalette.Instance.RadiantGreen;
 		backToMenuBtn.Pressed += () => {
 			GetTree().ReloadCurrentScene();
 		};
@@ -546,13 +590,13 @@ public partial class MainScene : Control
 		var centerViewport = GetNode<Control>("CenterViewport");
 		centerViewport.AddChild(_mainMenuPanel);
 		
-		_mainMenuPanel.SetAnchorsPreset(LayoutPreset.CenterBottom);
+		_mainMenuPanel.SetAnchorsPreset(LayoutPreset.Center);
 		_mainMenuPanel.GrowHorizontal = GrowDirection.Both;
-		_mainMenuPanel.GrowVertical = GrowDirection.Begin;
-		_mainMenuPanel.OffsetLeft = -200;
-		_mainMenuPanel.OffsetTop = -220;
-		_mainMenuPanel.OffsetRight = 200;
-		_mainMenuPanel.OffsetBottom = -20;
+		_mainMenuPanel.GrowVertical = GrowDirection.Both;
+		_mainMenuPanel.OffsetLeft = -220;
+		_mainMenuPanel.OffsetTop = -230;
+		_mainMenuPanel.OffsetRight = 220;
+		_mainMenuPanel.OffsetBottom = 210;
 
 		var styleBox = new StyleBoxFlat();
 		styleBox.BgColor = new Color(0, 0, 0, 1);
@@ -571,59 +615,75 @@ public partial class MainScene : Control
 		vbox.AddThemeConstantOverride("separation", 8);
 		margin.AddChild(vbox);
 
-		var title = new Label();
-		title.Text = "【 森林深處 │ DEEPFOREST 】";
-		var font = GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font");
-		title.AddThemeFontOverride("font", font);
-		title.AddThemeFontSizeOverride("font_size", 14);
-		title.AddThemeColorOverride("font_color", new Color(0.223f, 1.0f, 0.078f, 1.0f));
-		title.HorizontalAlignment = HorizontalAlignment.Center;
+		var cp = ColorPalette.Instance;
+
+		var title = new RichTextLabel();
+		title.BbcodeEnabled = true;
+		title.FitContent = true;
+		title.ScrollActive = false;
+		title.AutowrapMode = TextServer.AutowrapMode.Off;
+		title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+
+		string titleAscii = 
+			"    _/_/_/    _/_/_/_/  _/_/_/_/  _/_/_/    \n" +
+			"   _/    _/  _/        _/        _/    _/   \n" +
+			"  _/    _/  _/_/_/    _/_/_/    _/_/_/      \n" +
+			" _/    _/  _/        _/        _/           \n" +
+			"_/_/_/    _/_/_/_/  _/_/_/_/  _/            \n" +
+			"                                            \n" +
+			"_/_/_/_/    _/_/    _/_/_/    _/_/_/_/    _/_/_/  _/_/_/_/_/\n" +
+			"_/        _/    _/  _/    _/  _/        _/            _/    \n" +
+			"_/_/_/    _/    _/  _/_/_/    _/_/_/      _/_/        _/    \n" +
+			"_/        _/    _/  _/    _/  _/              _/      _/    \n" +
+			"_/          _/_/    _/    _/  _/_/_/_/  _/_/_/        _/    \n";
+
+		string greenHex = cp.RadiantGreen.ToHtml(false);
+		string grayHex = cp.GrayGreen.ToHtml(false);
+
+		title.Text = $"[center][color=#{greenHex}]{titleAscii}[/color]\n" +
+					 $"[color=#{greenHex}][font_size=15]模組化回合制卡牌懸疑解謎[/font_size][/color]\n" +
+					 $"[color=#{grayHex}][font_size=11]Version 1.0.0 │ Deep Forest Dev Team[/font_size][/color][/center]";
 		vbox.AddChild(title);
 
 		vbox.AddChild(new HSeparator());
 
 		var btnStart = new Button();
 		btnStart.Text = "▶ 開始遊戲";
-		btnStart.AddThemeFontOverride("font", font);
-		btnStart.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		btnStart.Modulate = cp.RadiantGreen;
 		btnStart.Pressed += StartNewGame;
 		vbox.AddChild(btnStart);
 
 		var btnContinue = new Button();
 		btnContinue.Text = "▶ 繼續遊戲";
-		btnContinue.AddThemeFontOverride("font", font);
 		
 		bool hasSave = SessionSaveSystem.HasSessionSave();
 		if (hasSave)
 		{
-			btnContinue.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+			btnContinue.Modulate = cp.RadiantGreen;
 			btnContinue.Pressed += ContinueSavedGame;
 		}
 		else
 		{
-			btnContinue.Modulate = new Color(0.3f, 0.4f, 0.2f, 1.0f);
+			btnContinue.Modulate = cp.GrayGreen;
 			btnContinue.Disabled = true;
 		}
 		vbox.AddChild(btnContinue);
 
 		var btnAchievements = new Button();
 		btnAchievements.Text = "▶ 歷史成就 (未開放)";
-		btnAchievements.AddThemeFontOverride("font", font);
-		btnAchievements.Modulate = new Color(0.3f, 0.4f, 0.2f, 1.0f);
+		btnAchievements.Modulate = cp.GrayGreen;
 		btnAchievements.Disabled = true;
 		vbox.AddChild(btnAchievements);
 
 		var btnSettings = new Button();
 		btnSettings.Text = "▶ 系統設定";
-		btnSettings.AddThemeFontOverride("font", font);
-		btnSettings.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		btnSettings.Modulate = cp.RadiantGreen;
 		btnSettings.Pressed += OpenSettings;
 		vbox.AddChild(btnSettings);
 
 		var btnExit = new Button();
 		btnExit.Text = "▶ 結束遊戲";
-		btnExit.AddThemeFontOverride("font", font);
-		btnExit.Modulate = new Color(0.223f, 1.0f, 0.078f, 1.0f);
+		btnExit.Modulate = cp.RadiantGreen;
 		btnExit.Pressed += () => GetTree().Quit();
 		vbox.AddChild(btnExit);
 	}
@@ -652,9 +712,9 @@ public partial class MainScene : Control
 		GameState.Instance.DeckInstance.Initialize(startingCards);
 
 		UpdateHUD();
+		UpdateActionsList();
 		UpdateMap();
 		UpdateSystemBanner();
-		UpdateActionsList();
 		UpdateSceneAndAvatar();
 
 		TurnManager.Instance.StartTurn();
@@ -675,9 +735,9 @@ public partial class MainScene : Control
 		SetGameplayUiVisible(true);
 
 		UpdateHUD();
+		UpdateActionsList();
 		UpdateMap();
 		UpdateSystemBanner();
-		UpdateActionsList();
 		UpdateSceneAndAvatar();
 
 		GameState.Instance.AddLog("存檔載入完成。你回到了森林深處。");
@@ -693,17 +753,16 @@ public partial class MainScene : Control
 			var centerViewport = GetNode<Control>("CenterViewport");
 			centerViewport.AddChild(_settingsPanel);
 
-			_settingsPanel.CustomMinimumSize = new Vector2(320, 260);
+			_settingsPanel.CustomMinimumSize = new Vector2(360, 340);
 			_settingsPanel.SetAnchorsPreset(LayoutPreset.Center);
 			_settingsPanel.GrowHorizontal = GrowDirection.Both;
 			_settingsPanel.GrowVertical = GrowDirection.Both;
-			_settingsPanel.OffsetLeft = -160;
-			_settingsPanel.OffsetTop = -130;
-			_settingsPanel.OffsetRight = 160;
-			_settingsPanel.OffsetBottom = 130;
+			_settingsPanel.OffsetLeft = -180;
+			_settingsPanel.OffsetTop = -170;
+			_settingsPanel.OffsetRight = 180;
+			_settingsPanel.OffsetBottom = 170;
 			
-			var font = GetNode<Label>("SystemBanner/BannerLabel").GetThemeFont("font");
-			_settingsPanel.Initialize(font);
+			_settingsPanel.Initialize(null);
 			_settingsPanel.SettingsClosed += CloseSettings;
 		}
 		_settingsPanel.Visible = true;

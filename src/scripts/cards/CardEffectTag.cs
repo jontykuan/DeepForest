@@ -40,5 +40,8 @@ namespace DeepForest.Cards
         StrBonus        = 1L << 21,  // 力量加成
         DexBonus        = 1L << 22,  // 敏捷加成
         WisBonus        = 1L << 23,  // 智慧加成
+        
+        // === 容器類 ===
+        Container       = 1L << 24,  // 容器類
     }
 }

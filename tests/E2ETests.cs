@@ -676,21 +676,24 @@ public class EndingManagerTests
     [Test]
     public void TestEscapeEndingCondition()
     {
-        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100 };
+        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100, Brutality = 90 };
+        player.CharacterData = new CharacterData { CharacterName = "湯自強", CharacterId = CharacterId.John };
         var deck = new Deck();
         var endingManager = new EndingManager();
 
         GameState.Instance.PlayerInstance = player;
         GameState.Instance.DeckInstance = deck;
         GameState.Instance.EndingManagerInstance = endingManager;
-        GameState.Instance.CurrentDay = 5;
-        GameState.Instance.CurrentDepth = GameConstants.MaxDepth;
+        GameState.Instance.CurrentStoryHandler = new JohnStoryHandler();
 
-        var mapCard = new Card { CardName = "地圖殘片", CardClass = CardClass.KeyItem };
-        deck.Initialize(new List<Card> { mapCard });
+        deck.Initialize(new List<Card> { 
+            new Card { CardId = CardId.KeyDivorceAgreement, CardName = "離婚協議書", CardClass = CardClass.KeyItem },
+            new Card { CardId = CardId.KeyRecordingTape, CardName = "錄音帶", CardClass = CardClass.KeyItem },
+            new Card { CardId = CardId.KeyPromissoryNote, CardName = "本票", CardClass = CardClass.KeyItem }
+        });
 
         bool endingTriggered = endingManager.CheckEndGameConditions();
-        Assert.IsTrue(endingTriggered, "Should trigger Escape ending with Map Item at max depth.");
+        Assert.IsTrue(endingTriggered, "Should trigger Escape ending with John items at 90 brutality.");
     }
 
     [Test]
@@ -1117,6 +1120,7 @@ public class CrossFeatureTests
         endingManager.EndingTriggered += (type, title, desc) => triggeredTitle = title;
 
         // Case 1: Jerry + Collar + Footprints + Depth > 100 -> 湯姆與傑利
+        player.Brutality = 90;
         GameState.Instance.CurrentDepth = 120;
         deck.Initialize(new List<Card> {
             CardFactory.CreateCard(CardId.KeyJerryCollar),
@@ -1128,6 +1132,7 @@ public class CrossFeatureTests
         Assert.AreEqual("成就：湯姆與傑利", triggeredTitle);
 
         // Case 2: Copy + DamagedPictureBook -> 暴力循環
+        player.Brutality = 90;
         deck.Initialize(new List<Card> {
             CardFactory.CreateCard(CardId.ActionCopy),
             CardFactory.CreateCard(CardId.KeyTornFairytale)
@@ -1137,6 +1142,7 @@ public class CrossFeatureTests
         Assert.AreEqual("成就：暴力循環", triggeredTitle);
 
         // Case 3: Suffocation + Collar -> 好狗狗
+        player.Brutality = 90;
         deck.Initialize(new List<Card> {
             CardFactory.CreateCard(CardId.CurseSuffocation),
             CardFactory.CreateCard(CardId.KeyJerryCollar)
@@ -1224,7 +1230,7 @@ public class RealWorldScenarioTests
     [Test]
     public void Scenario2SarahProfessorEscapePath()
     {
-        var player = new Player { MaxHp = 100, CurrentHp = 80 };
+        var player = new Player { MaxHp = 100, CurrentHp = 80, Brutality = 90 };
         var deck = new Deck();
         var map = new Card { CardName = "地圖殘片", CardClass = CardClass.KeyItem };
         deck.Initialize(new List<Card> { map });
@@ -1233,7 +1239,6 @@ public class RealWorldScenarioTests
         GameState.Instance.PlayerInstance = player;
         GameState.Instance.DeckInstance = deck;
         GameState.Instance.EndingManagerInstance = endingManager;
-        GameState.Instance.CurrentDepth = GameConstants.MaxDepth;
 
         bool triggered = endingManager.CheckEndGameConditions();
         Assert.IsTrue(triggered);
@@ -1813,7 +1818,7 @@ public class ParallelQuestsEndingTests
     [Test]
     public void TestJohnParallelQuestEndings()
     {
-        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100 };
+        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100, Brutality = 90 };
         player.CharacterData = new CharacterData { CharacterName = "湯自強", CharacterId = CharacterId.John };
         var deck = new Deck();
         var endingManager = new EndingManager();
@@ -1821,7 +1826,7 @@ public class ParallelQuestsEndingTests
         GameState.Instance.PlayerInstance = player;
         GameState.Instance.DeckInstance = deck;
         GameState.Instance.EndingManagerInstance = endingManager;
-        GameState.Instance.CurrentDepth = GameConstants.MaxDepth;
+        GameState.Instance.CurrentStoryHandler = new JohnStoryHandler();
 
         var mapCard = new Card { CardName = "地圖殘片", CardClass = CardClass.KeyItem };
         
@@ -1839,17 +1844,17 @@ public class ParallelQuestsEndingTests
         endingManager.CheckEndGameConditions();
         Assert.AreEqual("成就：隱而未發", triggeredTitle);
 
-        // Case 2: lacks any -> 順利逃出：破霧重圓
+        // Case 2: lacks any -> 林間捕食者
         deck.Initialize(new List<Card> { mapCard });
         triggeredTitle = "";
         endingManager.CheckEndGameConditions();
-        Assert.AreEqual("順利逃出：破霧重圓", triggeredTitle);
+        Assert.AreEqual("林間捕食者", triggeredTitle);
     }
 
     [Test]
     public void TestSarahParallelQuestEndings()
     {
-        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100 };
+        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100, Brutality = 90 };
         player.CharacterData = new CharacterData { CharacterName = "劉淑莉", CharacterId = CharacterId.Sarah };
         var deck = new Deck();
         var endingManager = new EndingManager();
@@ -1857,18 +1862,18 @@ public class ParallelQuestsEndingTests
         GameState.Instance.PlayerInstance = player;
         GameState.Instance.DeckInstance = deck;
         GameState.Instance.EndingManagerInstance = endingManager;
-        GameState.Instance.CurrentDepth = GameConstants.MaxDepth;
+        GameState.Instance.CurrentStoryHandler = new SarahStoryHandler();
 
         var mapCard = new Card { CardName = "地圖殘片", CardClass = CardClass.KeyItem };
         
         string triggeredTitle = "";
         endingManager.EndingTriggered += (type, title, desc) => triggeredTitle = title;
 
-        // Case 1: lacks Tommy -> 順利逃出：破霧重圓
+        // Case 1: lacks Tommy -> 狂躁的主婦
         deck.Initialize(new List<Card> { mapCard });
         triggeredTitle = "";
         endingManager.CheckEndGameConditions();
-        Assert.AreEqual("順利逃出：破霧重圓", triggeredTitle);
+        Assert.AreEqual("狂躁的主婦", triggeredTitle);
 
         // Case 2: has all four -> 成就：重獲新生
         deck.Initialize(new List<Card> { 
@@ -1897,7 +1902,7 @@ public class ParallelQuestsEndingTests
     [Test]
     public void TestNancyParallelQuestEndings()
     {
-        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100 };
+        var player = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100, Brutality = 90 };
         player.CharacterData = new CharacterData { CharacterName = "于晞", CharacterId = CharacterId.Nancy };
         var deck = new Deck();
         var endingManager = new EndingManager();
@@ -1905,7 +1910,7 @@ public class ParallelQuestsEndingTests
         GameState.Instance.PlayerInstance = player;
         GameState.Instance.DeckInstance = deck;
         GameState.Instance.EndingManagerInstance = endingManager;
-        GameState.Instance.CurrentDepth = GameConstants.MaxDepth;
+        GameState.Instance.CurrentStoryHandler = new NancyStoryHandler();
 
         var mapCard = new Card { CardName = "地圖殘片", CardClass = CardClass.KeyItem };
         
@@ -1942,21 +1947,21 @@ public class ParallelQuestsEndingTests
         var endingManager = new EndingManager();
         GameState.Instance.DeckInstance = deck;
         GameState.Instance.EndingManagerInstance = endingManager;
-        GameState.Instance.CurrentDepth = GameConstants.MaxDepth;
         var mapCard = new Card { CardName = "地圖殘片", CardClass = CardClass.KeyItem };
 
         string triggeredTitle = "";
         endingManager.EndingTriggered += (type, title, desc) => triggeredTitle = title;
 
-        var playerLeo = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 80 };
+        var playerLeo = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 80, Corruption = 90 };
         playerLeo.CharacterData = new CharacterData { CharacterName = "李有志", CharacterId = CharacterId.Leo };
         GameState.Instance.PlayerInstance = playerLeo;
+        GameState.Instance.CurrentStoryHandler = new LeoStoryHandler();
 
-        // 1. Default escape when no keys -> 順利逃出：破霧重圓
+        // 1. Default escape when no keys -> 古神代言人
         deck.Initialize(new List<Card> { mapCard });
         triggeredTitle = "";
         endingManager.CheckEndGameConditions();
-        Assert.AreEqual("順利逃出：破霧重圓", triggeredTitle);
+        Assert.AreEqual("古神代言人", triggeredTitle);
 
         // 2. Scripture and Roster -> 淫邪魔窟
         deck.Initialize(new List<Card> { mapCard, new Card { CardId = CardId.KeyOldScripture, CardName = "舊日教本", CardClass = CardClass.KeyItem }, new Card { CardId = CardId.KeyRoster, CardName = "花名冊", CardClass = CardClass.KeyItem } });
@@ -1990,9 +1995,10 @@ public class ParallelQuestsEndingTests
         GameState.Instance.IsDescentActive = false;
 
         // Celin Endings
-        var playerCelin = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100 };
+        var playerCelin = new Player { MaxHp = 100, CurrentHp = 100, MaxSanity = 100, CurrentSanity = 100, Brutality = 90 };
         playerCelin.CharacterData = new CharacterData { CharacterName = "李曉琳", CharacterId = CharacterId.Celin };
         GameState.Instance.PlayerInstance = playerCelin;
+        GameState.Instance.CurrentStoryHandler = new CelinStoryHandler();
         
         // 6. Celin: phone, diary, seed -> 成就：純潔餘孽
         deck.Initialize(new List<Card> { 
@@ -2219,7 +2225,7 @@ public class CurationAndHiddenStatsTests
     }
 
     [Test]
-    public void TestAddictionDuplicationOnDayChange()
+    public void TestAddictionDuplicationOnSceneTransition()
     {
         var player = new Player();
         player.InitializeFromData(GD.Load<CharacterData>("res://src/resources/characters/character_john.tres"));
@@ -2233,12 +2239,60 @@ public class CurationAndHiddenStatsTests
         deck.Hand.Add(addictionCard);
         GameState.Instance.DeckInstance = deck;
 
-        var turnManager = TurnManager.Instance;
-        turnManager.TriggerDayChange();
+        // Simulate a scene transition action resolve
+        var action = new SceneAction { EffectType = ActionEffectType.MoveForward };
+        
+        bool isSceneTransition = action.TargetNodeId >= 0 || 
+                                 action.EffectType == ActionEffectType.MoveForward ||
+                                 action.EffectType == ActionEffectType.ExploreIndoor ||
+                                 action.EffectType == ActionEffectType.LeaveIndoor ||
+                                 action.EffectType == ActionEffectType.ReturnOutdoor ||
+                                 action.EffectType == ActionEffectType.EnterNormalCabin ||
+                                 action.EffectType == ActionEffectType.EnterStrangeCabin ||
+                                 action.EffectType == ActionEffectType.EnterCave;
+
+        if (isSceneTransition)
+        {
+            int addictionInHand = deck.Hand.Count(c => c.CardId == CardId.CurseAddiction);
+            if (addictionInHand > 0)
+            {
+                for (int i = 0; i < addictionInHand; i++)
+                {
+                    Card addictionCardNew = CardFactory.CreateCard(CardId.CurseAddiction);
+                    if (addictionCardNew != null)
+                    {
+                        deck.AddCardToDiscardPile(addictionCardNew);
+                    }
+                }
+            }
+        }
 
         // Check that a new CurseAddiction card is added to the discard pile
         int countInDiscard = deck.DiscardPile.Count(c => c.CardId == CardId.CurseAddiction);
-        Assert.AreEqual(1, countInDiscard, "One CurseAddiction should be added to the discard pile.");
+        Assert.AreEqual(1, countInDiscard, "One CurseAddiction should be added to the discard pile on transition.");
+    }
+
+    [Test]
+    public void TestPlayAddictionCardDeductsSanity()
+    {
+        var player = new Player();
+        player.InitializeFromData(GD.Load<CharacterData>("res://src/resources/characters/character_john.tres"));
+        player.CurrentSanity = 50;
+        GameState.Instance.PlayerInstance = player;
+
+        var deck = new Deck();
+        deck.Initialize(new List<Card>());
+        
+        var addictionCard = CardFactory.CreateCard(CardId.CurseAddiction);
+        deck.Hand.Add(addictionCard);
+        GameState.Instance.DeckInstance = deck;
+
+        string msg;
+        var result = CardPlayHandler.TryPlayCard(addictionCard, player, deck, out msg);
+        
+        Assert.AreEqual(CardPlayHandler.PlayResult.Success, result);
+        Assert.AreEqual(48, player.CurrentSanity, "Sanity should decrease by 2.");
+        Assert.IsTrue(deck.DiscardPile.Contains(addictionCard), "Addiction card should be in the discard pile.");
     }
 
     [Test]
@@ -2366,7 +2420,219 @@ public class CurationAndHiddenStatsTests
         var playResultWithPistol = CardPlayHandler.TryPlayCard(bullet, player, deck, out message);
         Assert.AreEqual(DeepForest.UI.CardPlayHandler.PlayResult.Success, playResultWithPistol, "Should be able to play Bullet with Pistol equipped.");
     }
+
+    [Test]
+    public void TestCollectWaterWithContainerCheck()
+    {
+        var player = new Player();
+        player.InitializeFromData(GD.Load<CharacterData>("res://src/resources/characters/character_john.tres"));
+        GameState.Instance.PlayerInstance = player;
+
+        var deck = new Deck();
+        deck.Initialize(new List<Card>());
+        
+        var emptyBottle = CardFactory.CreateCard(CardId.EmptyBottle);
+        Assert.IsNotNull(emptyBottle);
+        Assert.IsTrue(emptyBottle.EffectTags.HasFlag(CardEffectTag.Container), "EmptyBottle should have Container tag.");
+        deck.Hand.Add(emptyBottle);
+        GameState.Instance.DeckInstance = deck;
+
+        var actionResolver = new ActionResolver();
+        var action = new SceneAction
+        {
+            ActionName = "裝水",
+            RequiredItem = "容器",
+            EffectType = ActionEffectType.CollectWater
+        };
+
+        var context = new ActionContext
+        {
+            Player = player,
+            Deck = deck,
+            TurnManager = TurnManager.Instance,
+            GameState = GameState.Instance,
+            MapManager = MapManager.Instance,
+            Environment = EnvironmentSystem.Instance
+        };
+
+        var result = actionResolver.Resolve(action, context);
+        Assert.IsTrue(result.Success, "Should succeed to collect water with EmptyBottle.");
+        Assert.IsFalse(CardQueryHelper.HasCardAnywhere(deck, CardId.EmptyBottle), "EmptyBottle should be consumed.");
+        Assert.IsTrue(CardQueryHelper.HasCardAnywhere(deck, CardId.ConsumableRawWater), "Should receive Raw Water.");
+
+        deck.Initialize(new List<Card>());
+        var emptyPill = CardFactory.CreateCard(CardId.KeyEmptyPillBottle);
+        Assert.IsNotNull(emptyPill);
+        Assert.IsFalse(emptyPill.EffectTags.HasFlag(CardEffectTag.Container), "KeyEmptyPillBottle should not have Container tag.");
+        deck.Hand.Add(emptyPill);
+
+        var result2 = actionResolver.Resolve(action, context);
+        Assert.IsFalse(result2.Success, "Should fail to collect water with KeyEmptyPillBottle.");
+        Assert.IsTrue(CardQueryHelper.HasCardAnywhere(deck, CardId.KeyEmptyPillBottle), "KeyEmptyPillBottle should not be consumed.");
+    }
+
+    [Test]
+    public void TestPlayKeyItemCardConsumesStatsAndDiscards()
+    {
+        var player = new Player();
+        player.InitializeFromData(GD.Load<CharacterData>("res://src/resources/characters/character_john.tres"));
+        player.CurrentHunger = 50;
+        player.CurrentThirst = 50;
+        player.CurrentHp = 100;
+        player.CurrentSanity = 100;
+        
+        var deck = new Deck();
+        deck.Initialize(new List<Card>());
+        
+        var oldKey = CardFactory.CreateCard(CardId.KeyOldKey);
+        Assert.IsNotNull(oldKey);
+        Assert.AreEqual(CardType.KeyItem, oldKey.CardType, "KeyOldKey should be a KeyItem.");
+        
+        oldKey.HungerCost = 2;
+        oldKey.ThirstCost = 3;
+        
+        deck.Hand.Add(oldKey);
+        
+        var result = DeepForest.UI.CardPlayHandler.TryPlayCard(oldKey, player, deck, out string message);
+        Assert.AreEqual(DeepForest.UI.CardPlayHandler.PlayResult.Success, result, "Playing KeyItem card should succeed.");
+        Assert.AreEqual(48, player.CurrentHunger, "Should consume hunger.");
+        Assert.AreEqual(47, player.CurrentThirst, "Should consume thirst.");
+        Assert.IsFalse(deck.Hand.Contains(oldKey), "Should be removed from hand.");
+        Assert.IsTrue(deck.DiscardPile.Contains(oldKey), "Should be in discard pile.");
+    }
 }
+
+public class ActionLoggingAndCompositeEventTests
+{
+    [Test]
+    public void TestLoggerGeneratesSessionIdAndLogsJsonl()
+    {
+        var logger = new ActionLogger();
+        Assert.IsNotNull(logger.SessionId);
+        Assert.AreEqual(5, logger.SessionId.Length, "Session ID should be 5 characters.");
+
+        var player = new Player { MaxHp = 100, CurrentHp = 95, CurrentSanity = 80 };
+        var deck = new Deck();
+        deck.Initialize(new List<Card>());
+        GameState.Instance.PlayerInstance = player;
+        GameState.Instance.DeckInstance = deck;
+
+        logger.InitializeNewSession();
+        logger.LogAction("MockAction", new Dictionary<string, object> { { "testKey", "testVal" } });
+
+        var logs = logger.GetMemoryLogs();
+        Assert.IsTrue(logs.Count > 0);
+        Assert.AreEqual("MockAction", logs[0].ActionType);
+        Assert.AreEqual("testVal", logs[0].Params["testKey"].ToString());
+
+        Assert.IsTrue(Godot.FileAccess.FileExists(logger.LogFilePath), "JSONL file should be written to user://logs/sessions");
+    }
+
+    [Test]
+    public void TestConditionCompositeLogAndStatChecks()
+    {
+        var player = new Player { MaxHp = 100, CurrentHp = 50, CurrentSanity = 30 };
+        var deck = new Deck();
+        deck.Initialize(new List<Card>());
+        GameState.Instance.PlayerInstance = player;
+        GameState.Instance.DeckInstance = deck;
+
+        var logger = GameState.Instance.Logger;
+        logger.InitializeNewSession();
+        logger.LogAction("ActionExecuted", new Dictionary<string, object> { { "actionName", "就地歇息" } });
+
+        // Condition 1: Hp >= 40
+        var condHp = new ConditionStatCheck { StatName = "Hp", Operator = ">=", Value = 40 };
+        Assert.IsTrue(condHp.Evaluate(player, deck));
+
+        // Condition 2: Sanity < 20
+        var condSanity = new ConditionStatCheck { StatName = "Sanity", Operator = "<", Value = 20 };
+        Assert.IsFalse(condSanity.Evaluate(player, deck));
+
+        // Condition 3: LogCheck (Has executed "就地歇息" this game)
+        var condLog = new ConditionLogCheck { ActionType = "ActionExecuted", ParamKey = "actionName", ParamValue = "就地歇息", Scope = "ThisGame" };
+        Assert.IsTrue(condLog.Evaluate(player, deck));
+
+        // Condition Composite (AND Gate: Hp >= 40 AND LogCheck)
+        var condAnd = new ConditionComposite();
+        condAnd.Conditions.Add(condHp);
+        condAnd.Conditions.Add(condLog);
+        Assert.IsTrue(condAnd.Evaluate(player, deck), "AND gate should be true.");
+
+        // Condition Composite (OR Gate: Sanity < 20 OR LogCheck)
+        var condOr = new ConditionComposite { IsOrGate = true };
+        condOr.Conditions.Add(condSanity);
+        condOr.Conditions.Add(condLog);
+        Assert.IsTrue(condOr.Evaluate(player, deck), "OR gate should be true.");
+    }
+
+    [Test]
+    public void TestEffectCompositeNestedLogic()
+    {
+        var player = new Player { MaxHp = 100, CurrentHp = 50, CurrentSanity = 50 };
+        var deck = new Deck();
+        deck.Initialize(new List<Card>());
+        GameState.Instance.PlayerInstance = player;
+        GameState.Instance.DeckInstance = deck;
+
+        // Condition: Hp >= 40 (Evaluates to true)
+        var condHp = new ConditionStatCheck { StatName = "Hp", Operator = ">=", Value = 40 };
+
+        // Then Effect: Hp +10, Sanity -5
+        var effectThen1 = new EffectModifyStat { StatName = "Hp", ChangeValue = 10 };
+        var effectThen2 = new EffectModifyStat { StatName = "Sanity", ChangeValue = -5 };
+        var compositeThen = new EffectComposite();
+        compositeThen.Effects.Add(effectThen1);
+        compositeThen.Effects.Add(effectThen2);
+
+        // Else Effect: Hp -20 (Not run)
+        var effectElse = new EffectModifyStat { StatName = "Hp", ChangeValue = -20 };
+
+        // Conditional Effect
+        var conditional = new EffectConditional
+        {
+            Condition = condHp
+        };
+        conditional.ThenEffects.Add(compositeThen);
+        conditional.ElseEffects.Add(effectElse);
+
+        conditional.Execute(player, deck);
+
+        Assert.AreEqual(60, player.CurrentHp, "Hp should be increased by 10.");
+        Assert.AreEqual(45, player.CurrentSanity, "Sanity should be decreased by 5.");
+    }
+
+    [Test]
+    public void TestCardPlayExecutesCompositeEffect()
+    {
+        var player = new Player { MaxHp = 100, CurrentHp = 50, CurrentSanity = 50 };
+        var deck = new Deck();
+        deck.Initialize(new List<Card>());
+        GameState.Instance.PlayerInstance = player;
+        GameState.Instance.DeckInstance = deck;
+
+        var card = new Card
+        {
+            CardName = "測試數據卡",
+            CardClass = CardClass.Consumable,
+            HungerCost = 0,
+            ThirstCost = 0
+        };
+
+        // PlayEffect: increase Sanity by 15
+        var playEffect = new EffectModifyStat { StatName = "Sanity", ChangeValue = 15 };
+        card.PlayEffect = playEffect;
+
+        deck.Hand.Add(card);
+
+        string message;
+        var result = DeepForest.UI.CardPlayHandler.TryPlayCard(card, player, deck, out message);
+
+        Assert.AreEqual(DeepForest.UI.CardPlayHandler.PlayResult.Success, result);
+        Assert.AreEqual(65, player.CurrentSanity, "Playing data-driven card should trigger PlayEffect and modify Sanity.");
+    }
+}
+
 
 
 

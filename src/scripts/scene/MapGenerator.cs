@@ -8,10 +8,7 @@ namespace DeepForest.Scene
     {
         public static void GenerateMap(Dictionary<int, MapNode> nodes, out int currentNodeId)
         {
-            var rand = new Random();
             nodes.Clear();
-
-            int[] yCoords = { 450, 360, 270, 180, 90 };
 
             var startScene = new SceneData
             {
@@ -24,14 +21,22 @@ namespace DeepForest.Scene
             startScene.Decals.Add("tent_left");
             ActionGenerator.GenerateDynamicActions(startScene, 0);
 
-            var startNode = new MapNode { Id = 0, Depth = 0, Name = "紮營地", SceneData = startScene, X = 12, Y = yCoords[0] };
+            var startNode = new MapNode { Id = 0, Depth = 0, Name = "紮營地", SceneData = startScene, X = 12, Y = 10 };
             nodes[0] = startNode;
 
-            List<List<MapNode>> layers = new() { new List<MapNode> { startNode } };
-            int currentId = 1;
+            currentNodeId = 0;
+        }
+
+        public static void EnsureNodeConnections(MapManager manager, int nodeId)
+        {
+            if (!manager.Nodes.TryGetValue(nodeId, out var node)) return;
+            if (node.Connections.Count > 0) return;
+
+            var rand = new Random();
+            int numNodes = rand.Next(2, 4); // 2 or 3 branches
+            int nextDepth = node.Depth + 1;
 
             string[] grounds = { "dirt", "grass", "planks" };
-            string[] terrains = { "woodland", "riverside", "swamp", "stone_wall", "ruins", "cabin" };
             string[] decalPool = { 
                 "window", "door", "sofa", "npc", "chest", 
                 "chest_wood", "chest_iron", "chest_cursed", 
@@ -39,35 +44,67 @@ namespace DeepForest.Scene
                 "npc_hunter", "combat_wolf", "combat_cultist" 
             };
 
-            for (int depth = 1; depth <= 3; depth++)
+            int maxId = 0;
+            foreach (var key in manager.Nodes.Keys)
             {
-                int numNodes = rand.Next(2, 4);
-                var layerNodes = new List<MapNode>();
+                if (key > maxId) maxId = key;
+            }
+            int nextIdStart = maxId + 1;
 
-                for (int i = 0; i < numNodes; i++)
+            for (int i = 0; i < numNodes; i++)
+            {
+                int childId = nextIdStart + i;
+                string parentLeft = node.SceneData.LeftTerrain;
+                string parentRight = node.SceneData.RightTerrain;
+
+                string leftT = GetTransitionTerrain(parentLeft, rand);
+                string rightT = GetTransitionTerrain(parentRight, rand);
+
+                if (leftT == "riverside" && rightT == "riverside")
                 {
-                    string leftT = terrains[rand.Next(terrains.Length)];
-                    string rightT = terrains[rand.Next(terrains.Length)];
-                    if (leftT == "riverside" && rightT == "riverside")
-                    {
-                        if (rand.Next(2) == 0)
-                            leftT = "woodland";
-                        else
-                            rightT = "woodland";
-                    }
-                    string ground = grounds[rand.Next(grounds.Length)];
+                    if (rand.Next(2) == 0)
+                        leftT = "woodland";
+                    else
+                        rightT = "woodland";
+                }
+                string ground = grounds[rand.Next(grounds.Length)];
+                string name = GetSceneNameFromTerrains(leftT, rightT);
 
-                    string name = GetSceneNameFromTerrains(leftT, rightT);
+                var sd = new SceneData
+                {
+                    SceneName = name,
+                    SceneDescription = GetSceneDescriptionFromTerrains(leftT, rightT),
+                    BottomGround = ground,
+                    LeftTerrain = leftT,
+                    RightTerrain = rightT
+                };
 
-                    var sd = new SceneData
+                bool leftPassable = (leftT == "swamp" || leftT == "ruins");
+                bool rightPassable = (rightT == "swamp" || rightT == "ruins");
+                bool forwardPassable = rand.NextDouble() >= 0.3; // 70% chance forward is passable
+
+                if (!leftPassable && !rightPassable && !forwardPassable)
+                {
+                    // Force at least one direction to have a passable event decal
+                    int forceSide = rand.Next(0, 2); // 0 = left, 1 = right
+                    string decalType = rand.Next(0, 3) switch
                     {
-                        SceneName = name,
-                        SceneDescription = GetSceneDescriptionFromTerrains(leftT, rightT),
-                        BottomGround = ground,
-                        LeftTerrain = leftT,
-                        RightTerrain = rightT
+                        0 => "door_normal",
+                        1 => "door_strange",
+                        _ => "door_cave"
                     };
+                    string sideStr = forceSide == 0 ? "left" : "right";
+                    sd.Decals.Add($"{decalType}_{sideStr}");
+                    sd.IsForwardBlocked = true;
+                }
+                else if (!forwardPassable)
+                {
+                    sd.IsForwardBlocked = true;
+                }
 
+                // If not forced, randomly populate decals
+                if (sd.Decals.Count == 0)
+                {
                     int numDecals = rand.Next(0, 3);
                     for (int dIdx = 0; dIdx < numDecals; dIdx++)
                     {
@@ -79,84 +116,32 @@ namespace DeepForest.Scene
                         string side = rand.Next(2) == 0 ? "left" : "right";
                         sd.Decals.Add($"{decalType}_{side}");
                     }
-
-                    ActionGenerator.GenerateDynamicActions(sd, -1);
-
-                    int centerX = 15;
-                    if (numNodes == 2)
-                    {
-                        centerX = (i == 0) ? 8 : 22;
-                    }
-                    else if (numNodes == 3)
-                    {
-                        centerX = (i == 0) ? 6 : ((i == 1) ? 15 : 24);
-                    }
-
-                    var node = new MapNode
-                    {
-                        Id = currentId++,
-                        Depth = depth,
-                        Name = name,
-                        SceneData = sd,
-                        X = centerX - 3,
-                        Y = yCoords[depth]
-                    };
-                    nodes[node.Id] = node;
-                    layerNodes.Add(node);
                 }
-                layers.Add(layerNodes);
-            }
 
-            var exitScene = new SceneData
-            {
-                SceneName = "迷霧出口",
-                SceneDescription = "迷霧在前方逐漸稀疏。這就是出口嗎？",
-                BottomGround = "dirt",
-                LeftTerrain = "woodland",
-                RightTerrain = "woodland"
-            };
-            var exitNode = new MapNode { Id = currentId++, Depth = 4, Name = "迷霧出口", SceneData = exitScene, X = 12, Y = yCoords[4] };
-            nodes[exitNode.Id] = exitNode;
-            layers.Add(new List<MapNode> { exitNode });
+                ActionGenerator.GenerateDynamicActions(sd, childId);
 
-            ActionGenerator.GenerateDynamicActions(exitScene, exitNode.Id);
-
-            for (int d = 0; d < 4; d++)
-            {
-                var currentLayer = layers[d];
-                var nextLayer = layers[d + 1];
-
-                foreach (var u in currentLayer)
+                int centerX = 15;
+                if (numNodes == 2)
                 {
-                    int nextIdx = rand.Next(nextLayer.Count);
-                    u.Connections.Add(nextLayer[nextIdx].Id);
+                    centerX = (i == 0) ? 8 : 22;
                 }
-
-                foreach (var v in nextLayer)
+                else if (numNodes == 3)
                 {
-                    bool hasParent = false;
-                    foreach (var u in currentLayer)
-                    {
-                        if (u.Connections.Contains(v.Id))
-                        {
-                            hasParent = true;
-                            break;
-                        }
-                    }
-
-                    if (!hasParent)
-                    {
-                        int parentIdx = rand.Next(currentLayer.Count);
-                        var parentNode = currentLayer[parentIdx];
-                        if (!parentNode.Connections.Contains(v.Id))
-                        {
-                            parentNode.Connections.Add(v.Id);
-                        }
-                    }
+                    centerX = (i == 0) ? 6 : ((i == 1) ? 15 : 24);
                 }
-            }
 
-            currentNodeId = 0;
+                var childNode = new MapNode
+                {
+                    Id = childId,
+                    Depth = nextDepth,
+                    Name = name,
+                    SceneData = sd,
+                    X = centerX - 3,
+                    Y = node.Y - 2
+                };
+                manager.Nodes[childId] = childNode;
+                node.Connections.Add(childId);
+            }
         }
 
         private static string GetSceneNameFromTerrains(string left, string right)
@@ -203,6 +188,21 @@ namespace DeepForest.Scene
                 "chest_wood" or "chest_iron" or "chest_cursed" => true,
                 _ => true
             };
+        }
+
+        private static string GetTransitionTerrain(string current, Random rand)
+        {
+            var allowed = current switch
+            {
+                "woodland" => new[] { "woodland", "woodland", "riverside", "cabin" },
+                "riverside" => new[] { "riverside", "riverside", "woodland", "swamp" },
+                "swamp" => new[] { "swamp", "swamp", "riverside", "stone_wall" },
+                "stone_wall" => new[] { "stone_wall", "stone_wall", "swamp", "ruins" },
+                "ruins" => new[] { "ruins", "ruins", "stone_wall", "cabin" },
+                "cabin" => new[] { "cabin", "cabin", "woodland", "ruins" },
+                _ => new[] { "woodland", "riverside", "swamp", "stone_wall", "ruins", "cabin" }
+            };
+            return allowed[rand.Next(allowed.Length)];
         }
     }
 }

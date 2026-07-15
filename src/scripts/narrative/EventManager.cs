@@ -196,11 +196,38 @@ namespace DeepForest.Narrative
                     return false;
             }
 
+            // 12. Nested composite trigger conditions
+            if (ev.CustomCondition != null)
+            {
+                var deck = GameState.Instance.DeckInstance;
+                if (!ev.CustomCondition.Evaluate(player, deck))
+                    return false;
+            }
+
             return true;
         }
 
         public static string ResolveEventOption(EventOption option, Player player, Deck deck)
         {
+            // Log Option Chosen
+            string eventId = CurrentActiveEvent != null ? CurrentActiveEvent.EventId : "unknown";
+            int optionIndex = -1;
+            if (CurrentActiveEvent != null)
+            {
+                optionIndex = CurrentActiveEvent.Options.IndexOf(option);
+            }
+            GameState.Instance.Logger.LogAction("OptionChosen", new Dictionary<string, object> { 
+                { "eventId", eventId }, 
+                { "optionIndex", optionIndex },
+                { "optionText", option.OptionText }
+            });
+
+            // Execute custom nested composite effects
+            if (option.Effect != null)
+            {
+                option.Effect.Execute(player, deck);
+            }
+
             // Apply stat changes
             player.CurrentHp = Math.Clamp(player.CurrentHp + option.HpChange, 0, player.MaxHp);
             player.CurrentSanity = Math.Clamp(player.CurrentSanity + option.SanityChange, 0, player.MaxSanity);

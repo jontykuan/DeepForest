@@ -37,5 +37,8 @@ namespace DeepForest.Narrative
 
         // Options
         [Export] public Godot.Collections.Array<EventOption> Options { get; set; } = new();
+
+        // Nested composite trigger conditions
+        [Export] public EventCondition? CustomCondition { get; set; }
     }
 }
