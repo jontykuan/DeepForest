@@ -19,7 +19,7 @@ public class AvatarRenderer
 	{
 		_buffer.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
 
-		string baseDir = $"res://assets/ascii_art/avatars/{avatarName}";
+		string baseDir = $"{DeepForest.Core.ResourcePaths.AvatarsDir}{avatarName}";
 		
 		string fileName = "base";
 		if (currentHp < 30 || expression == "pain")

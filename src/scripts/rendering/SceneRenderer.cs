@@ -22,8 +22,8 @@ public class SceneRenderer
 	{
 		_buffer.Clear(' ', new Color(0.22f, 1.0f, 0.08f), new Color(0, 0, 0));
 
-		string baseDir = "res://assets/ascii_art/scenes";
-		string templatePath = $"{baseDir}/perspective_template.txt";
+		string baseDir = DeepForest.Core.ResourcePaths.ScenesDir;
+		string templatePath = $"{baseDir}perspective_template.txt";
 
 		if (Godot.FileAccess.FileExists(templatePath))
 		{
@@ -55,14 +55,14 @@ public class SceneRenderer
 
 	private void LoadSceneFromFiles(SceneData sd)
 	{
-		string baseDir = "res://assets/ascii_art/scenes";
+		string baseDir = DeepForest.Core.ResourcePaths.ScenesDir;
 
 		// 1. Load perspective base grid
-		TextGrid baseGrid = AsciiTemplate.Load($"{baseDir}/perspective_template.txt", null, "scene");
+		TextGrid baseGrid = AsciiTemplate.Load($"{baseDir}perspective_template.txt", null, "scene");
 		_buffer.Blit(baseGrid, 0, 0, false);
 
 		// 2. Load ground
-		string groundPath = $"{baseDir}/ground_{sd.BottomGround}.txt";
+		string groundPath = $"{baseDir}ground_{sd.BottomGround}.txt";
 		if (Godot.FileAccess.FileExists(groundPath))
 		{
 			TextGrid groundGrid = AsciiTemplate.Load(groundPath, null, "scene");
@@ -70,7 +70,7 @@ public class SceneRenderer
 		}
 
 		// 3. Load left terrain
-		string leftPath = $"{baseDir}/terrain_{sd.LeftTerrain}_left.txt";
+		string leftPath = $"{baseDir}terrain_{sd.LeftTerrain}_left.txt";
 		if (Godot.FileAccess.FileExists(leftPath))
 		{
 			TextGrid leftGrid = AsciiTemplate.Load(leftPath, null, "scene");
@@ -78,7 +78,7 @@ public class SceneRenderer
 		}
 
 		// 4. Load right terrain
-		string rightPath = $"{baseDir}/terrain_{sd.RightTerrain}_right.txt";
+		string rightPath = $"{baseDir}terrain_{sd.RightTerrain}_right.txt";
 		if (Godot.FileAccess.FileExists(rightPath))
 		{
 			TextGrid rightGrid = AsciiTemplate.Load(rightPath, null, "scene");
@@ -88,7 +88,7 @@ public class SceneRenderer
 		// 5. Load Decals
 		foreach (var decal in sd.Decals)
 		{
-			string decalPath = $"{baseDir}/decal_{decal}.txt";
+			string decalPath = $"{baseDir}decal_{decal}.txt";
 			if (Godot.FileAccess.FileExists(decalPath))
 			{
 				TextGrid decalGrid = AsciiTemplate.Load(decalPath, null, "scene");

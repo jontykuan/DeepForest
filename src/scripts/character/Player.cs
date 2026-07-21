@@ -9,17 +9,17 @@ public partial class Player : Node
 {
     [Signal] public delegate void StatChangedEventHandler(string statName, int oldValue, int newValue);
 
-    private int _maxHp = 100;
-    private int _currentHp = 100;
+    private int _maxHp = GameConfig.DefaultMaxHp;
+    private int _currentHp = GameConfig.DefaultMaxHp;
     
-    private int _maxSanity = 100;
-    private int _currentSanity = 100;
+    private int _maxSanity = GameConfig.DefaultMaxSanity;
+    private int _currentSanity = GameConfig.DefaultMaxSanity;
     
-    private int _maxHunger = 50;
-    private int _currentHunger = 50;
+    private int _maxHunger = GameConfig.DefaultMaxHunger;
+    private int _currentHunger = GameConfig.DefaultMaxHunger;
     
-    private int _maxThirst = 50;
-    private int _currentThirst = 50;
+    private int _maxThirst = GameConfig.DefaultMaxThirst;
+    private int _currentThirst = GameConfig.DefaultMaxThirst;
 
     private int _brutality = 0;
     private int _corruption = 0;
@@ -151,9 +151,9 @@ public partial class Player : Node
         }
     }
 
-    public int Draw { get; set; } = 5;
-    public int HandLimit { get; set; } = 7;
-    public int DeckCapacity { get; set; } = 30;
+    public int Draw { get; set; } = GameConfig.DefaultDraw;
+    public int HandLimit { get; set; } = GameConfig.DefaultHandLimit;
+    public int DeckCapacity { get; set; } = GameConfig.DefaultDeckCapacity;
 
     [Export] public CharacterData? CharacterData { get; set; }
 

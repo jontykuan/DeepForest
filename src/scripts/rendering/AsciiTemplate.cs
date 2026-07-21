@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using DeepForest.Core;
 
 namespace DeepForest.Rendering;
 
@@ -9,7 +10,7 @@ public static class AsciiTemplate
 	{
 		if (!Godot.FileAccess.FileExists(txtPath))
 		{
-			GD.PrintErr($"AsciiTemplate: File not found: {txtPath}");
+			DeepForest.Core.Logger.Error("AsciiTemplate: File not found", "Path", txtPath);
 			return new TextGrid(1, 1);
 		}
 

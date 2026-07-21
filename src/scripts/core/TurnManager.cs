@@ -74,27 +74,27 @@ public partial class TurnManager : Node
     {
         if (player.CurrentHunger <= 0)
         {
-            player.CurrentHp -= 5;
-            player.CurrentSanity -= 5;
+            player.CurrentHp -= GameConfig.StarvationHpPenalty;
+            player.CurrentSanity -= GameConfig.StarvationSanityPenalty;
             GameState.Instance.AddLog("因為極度飢餓，你的體力與理智都在流失。");
         }
 
         if (player.CurrentThirst <= 0)
         {
-            player.CurrentHp -= 5;
-            player.CurrentSanity -= 5;
+            player.CurrentHp -= GameConfig.DehydrationHpPenalty;
+            player.CurrentSanity -= GameConfig.DehydrationSanityPenalty;
             GameState.Instance.AddLog("因為極度口渴，你的體力與理智都在流失。");
         }
 
         if (StatusEffect.HasEffect(deck.Hand, CardEffectTag.WoundInfection))
         {
-            player.CurrentHp -= 3;
+            player.CurrentHp -= GameConfig.WoundInfectionHpPenalty;
             GameState.Instance.AddLog("傷口感染惡化，扣減 3 點體力。");
         }
 
         if (StatusEffect.HasEffect(deck.Hand, CardEffectTag.Corruption))
         {
-            player.CurrentSanity -= 5;
+            player.CurrentSanity -= GameConfig.CorruptionCurseSanityPenalty;
             GameState.Instance.AddLog("手牌中的【穢祟附身】發揮邪祟效果，扣減了你 5 點理智。");
         }
 
@@ -109,7 +109,7 @@ public partial class TurnManager : Node
         {
             if (GameState.Instance.IsDescentActive)
             {
-                player.CurrentSanity -= 5;
+                player.CurrentSanity -= GameConfig.DescentSanityPenalty;
                 GameState.Instance.AddLog("在降神的邪氣侵蝕下，你的理智在持續流失（理智 -5）。");
             }
 
@@ -218,15 +218,15 @@ public partial class TurnManager : Node
         int day = GameState.Instance.CurrentDay;
         int depth = GameState.Instance.CurrentDepth;
         
-        int baseHungerLoss = (balance != null ? balance.HungerDepletion : 3) + (day / 4) + (depth / 10);
-        int baseThirstLoss = (balance != null ? balance.ThirstDepletion : 3) + (day / 4) + (depth / 10);
+        int baseHungerLoss = (balance != null ? balance.HungerDepletion : GameConfig.DefaultHungerDepletion) + (day / 4) + (depth / 10);
+        int baseThirstLoss = (balance != null ? balance.ThirstDepletion : GameConfig.DefaultThirstDepletion) + (day / 4) + (depth / 10);
 
         player.CurrentHunger -= baseHungerLoss;
         player.CurrentThirst -= baseThirstLoss;
         GameState.Instance.AddLog($"今日消耗：飢餓值 -{baseHungerLoss}，口渴值 -{baseThirstLoss}。");
 
-        int hpRecovery = balance != null ? balance.BaseHpRecovery : 8;
-        int sanityRecovery = balance != null ? balance.BaseSanityRecovery : 5;
+        int hpRecovery = balance != null ? balance.BaseHpRecovery : GameConfig.DefaultBaseHpRecovery;
+        int sanityRecovery = balance != null ? balance.BaseSanityRecovery : GameConfig.DefaultBaseSanityRecovery;
 
         float recoveryMult = env != null ? env.GetRestRecoveryMultiplier() : 1.0f;
         hpRecovery = (int)(hpRecovery * recoveryMult);
@@ -234,7 +234,7 @@ public partial class TurnManager : Node
 
         player.CurrentHp += hpRecovery;
         player.CurrentSanity += sanityRecovery;
-        player.CurrentHp -= 5; 
+        player.CurrentHp -= GameConfig.TurnEndEnvironmentHpPenalty; 
         
         GameState.Instance.AddLog($"休息恢復：體力 +{hpRecovery} (含寒冷/天候扣減)，理智 +{sanityRecovery}。");
 

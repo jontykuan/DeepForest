@@ -59,22 +59,31 @@ namespace DeepForest.UI
             string wColor = cp.SilentWhite.ToHtml(false);
             string grColor = cp.GrayGreen.ToHtml(false);
 
-            _statsLabel.Text = $"[color=#{gColor}][ 狀態面板 ][/color]\n" +
-                               $"體力: {player.CurrentHp}/{player.MaxHp}\n{hpBar}\n" +
-                               $"理智: {player.CurrentSanity}/{player.MaxSanity}\n{sanBar}\n" +
-                               $"飢餓: {player.CurrentHunger}/{player.MaxHunger}\n{hungerBar}\n" +
-                               $"口渴: {player.CurrentThirst}/{player.MaxThirst}\n{thirstBar}\n" +
-                               $"[color=#{gColor}][ 背包負重 ][/color]\n" +
-                               $"卡牌重: {deck.GetTotalWeight()}/{player.DeckCapacity}\n" +
-                               $"手牌: {deck.Hand.Count} | [color=#{grColor}]庫: {deck.DrawPile.Count}[/color] | [color=#{grColor}]棄: {deck.DiscardPile.Count}[/color]";
+            _statsLabel.Text = $"[color=#{gColor}]┌── 狀態面板 ────────┐[/color]\n" +
+                               $"  體力: {player.CurrentHp,3}/{player.MaxHp,3}\n  {hpBar}\n" +
+                               $"  理智: {player.CurrentSanity,3}/{player.MaxSanity,3}\n  {sanBar}\n" +
+                               $"  飢餓: {player.CurrentHunger,3}/{player.MaxHunger,3}\n  {hungerBar}\n" +
+                               $"  口渴: {player.CurrentThirst,3}/{player.MaxThirst,3}\n  {thirstBar}\n" +
+                               $"[color=#{gColor}]├── 背包負重 ────────┤[/color]\n" +
+                               $"  卡牌重: {deck.GetTotalWeight(),3}/{player.DeckCapacity,3}\n" +
+                               $"  手牌: {deck.Hand.Count,2} | [color=#{grColor}]庫: {deck.DrawPile.Count,2}[/color] | [color=#{grColor}]棄: {deck.DiscardPile.Count,2}[/color]\n" +
+                               $"[color=#{gColor}]└────────────────────┘[/color]";
 
             if (_itemLabel != null)
             {
-                string itemsText = $"[color=#{gColor}][ 當前裝備 ][/color]\n\n";
-                foreach (var eq in deck.EquippedCards)
+                string itemsText = $"[color=#{gColor}]┌── 當前裝備 ────────┐[/color]\n";
+                if (deck.EquippedCards.Count == 0)
                 {
-                    itemsText += $"[color=#{wColor}][裝備][/color] {eq.CardName}\n";
+                    itemsText += $"  [color=#{grColor}](無裝備)[/color]\n";
                 }
+                else
+                {
+                    foreach (var eq in deck.EquippedCards)
+                    {
+                        itemsText += $"  [color=#{wColor}][裝備][/color] {eq.CardName}\n";
+                    }
+                }
+                itemsText += $"[color=#{gColor}]└────────────────────┘[/color]";
                 _itemLabel.Text = itemsText;
             }
         }

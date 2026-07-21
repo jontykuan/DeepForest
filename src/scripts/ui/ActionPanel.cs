@@ -104,7 +104,26 @@ namespace DeepForest.UI
             {
                 HBoxContainer row = new HBoxContainer();
                 Button actionButton = new Button();
-                actionButton.Text = GetActionLabelText(action);
+                
+                var (prefix, actionName) = GetActionLabelParts(action);
+                string paddedPrefix = string.IsNullOrEmpty(prefix) ? "" : PadPrefix(prefix, 30);
+                string arrow = string.IsNullOrEmpty(prefix) ? "" : " ▶ ";
+                string baseText = $"{paddedPrefix}{arrow}{actionName}";
+                
+                actionButton.Text = "  " + baseText;
+                
+                actionButton.MouseEntered += () => {
+                    if (!actionButton.Disabled) actionButton.Text = "» " + baseText;
+                };
+                actionButton.MouseExited += () => {
+                    actionButton.Text = "  " + baseText;
+                };
+                actionButton.FocusEntered += () => {
+                    if (!actionButton.Disabled) actionButton.Text = "» " + baseText;
+                };
+                actionButton.FocusExited += () => {
+                    actionButton.Text = "  " + baseText;
+                };
                 
                 bool available = IsActionAvailable(action, out string state);
                 
@@ -130,7 +149,24 @@ namespace DeepForest.UI
             ActiveActions = activeActions;
         }
 
-        private string GetActionLabelText(SceneAction action)
+        private int GetVisualWidth(string s)
+        {
+            int width = 0;
+            foreach (char c in s)
+            {
+                width += (c > 255) ? 2 : 1;
+            }
+            return width;
+        }
+
+        private string PadPrefix(string prefix, int targetWidth)
+        {
+            int currentWidth = GetVisualWidth(prefix);
+            if (currentWidth >= targetWidth) return prefix;
+            return prefix + new string(' ', targetWidth - currentWidth);
+        }
+
+        private (string prefix, string label) GetActionLabelParts(SceneAction action)
         {
             int req = action.ThresholdValue;
             if (action.ThresholdType == ThresholdType.Dex)
@@ -182,7 +218,7 @@ namespace DeepForest.UI
                 prefix += "[理智 -1]";
             }
 
-            return $"{prefix} ▶ {action.ActionName}";
+            return (prefix, action.ActionName);
         }
 
         private bool IsActionAvailable(SceneAction action, out string state)

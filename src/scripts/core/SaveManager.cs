@@ -88,7 +88,7 @@ namespace DeepForest.Core
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[SaveManager] 存檔失敗: {ex.Message}");
+                Logger.Error("Save operation failed", "Error", ex.Message, "StackTrace", ex.StackTrace);
             }
         }
 
@@ -111,7 +111,7 @@ namespace DeepForest.Core
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[SaveManager] 讀檔失敗: {ex.Message}");
+                Logger.Error("Load operation failed", "Error", ex.Message, "StackTrace", ex.StackTrace);
                 CurrentSave = new SaveData();
             }
         }

@@ -101,7 +101,7 @@ namespace DeepForest.Core
 
     public static class SessionSaveSystem
     {
-        private const string SessionSavePath = "user://deepforest_session.json";
+        private static string SessionSavePath => ResourcePaths.SessionSaveFile;
 
         public static bool HasSessionSave()
         {
@@ -123,7 +123,7 @@ namespace DeepForest.Core
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[SessionSaveSystem] 刪除存檔失敗: {ex.Message}");
+                Logger.Error("Session save deletion failed", "Error", ex.Message, "StackTrace", ex.StackTrace);
             }
         }
 
@@ -211,7 +211,7 @@ namespace DeepForest.Core
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[SessionSaveSystem] 存檔寫入失敗: {ex.Message}");
+                Logger.Error("Session save write failed", "Error", ex.Message, "StackTrace", ex.StackTrace);
             }
         }
 
@@ -322,7 +322,7 @@ namespace DeepForest.Core
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[SessionSaveSystem] 讀檔還原失敗: {ex.Message}");
+                Logger.Error("Session restore failed", "Error", ex.Message, "StackTrace", ex.StackTrace);
                 return false;
             }
         }

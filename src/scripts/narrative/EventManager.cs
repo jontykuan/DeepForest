@@ -43,10 +43,10 @@ namespace DeepForest.Narrative
                 }
             }
 
-            // Scan res://src/resources/events/ if directory exists
-            if (DirAccess.DirExistsAbsolute("res://src/resources/events/"))
+            // Scan EventsDir if directory exists
+            if (DirAccess.DirExistsAbsolute(DeepForest.Core.ResourcePaths.EventsDir))
             {
-                var dir = DirAccess.Open("res://src/resources/events/");
+                var dir = DirAccess.Open(DeepForest.Core.ResourcePaths.EventsDir);
                 if (dir != null)
                 {
                     dir.ListDirBegin();
@@ -55,7 +55,7 @@ namespace DeepForest.Narrative
                     {
                         if (!dir.CurrentIsDir() && fileName.EndsWith(".tres"))
                         {
-                            var ev = GD.Load<EventData>($"res://src/resources/events/{fileName}");
+                            var ev = GD.Load<EventData>($"{DeepForest.Core.ResourcePaths.EventsDir}{fileName}");
                             if (ev != null && DoesEventMatch(ev, node, player))
                             {
                                 candidates.Add(ev);

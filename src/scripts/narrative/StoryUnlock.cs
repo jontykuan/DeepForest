@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using DeepForest.Core;
 
 namespace DeepForest.Narrative;
 
@@ -8,7 +9,7 @@ public partial class StoryUnlock : Node
 {
     public static StoryUnlock Instance { get; private set; } = null!;
 
-    private const string SavePath = "user://story_unlocks.cfg";
+    private static string SavePath => ResourcePaths.StoryUnlockSaveFile;
     private ConfigFile _configFile = new();
     private List<string> _unlockedTitles = new();
 
@@ -25,7 +26,7 @@ public partial class StoryUnlock : Node
             _unlockedTitles.Add(title);
             _configFile.SetValue("Unlocks", title, description);
             _configFile.Save(SavePath);
-            GD.Print($"[StoryUnlock] Unlocked: {title}");
+            DeepForest.Core.Logger.Info("Unlocked story segment", "Title", title);
         }
     }
 
